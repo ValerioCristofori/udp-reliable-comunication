@@ -60,8 +60,8 @@ void handler() {
         //inviare exit al server su un campo particolare
         n = sendto( sockfd ,  &datagram,  sizeof(datagram) , 0 ,
                     ( struct sockaddr *)&servaddr , sizeof( servaddr ));
-        if ( n < 0 ) {
-          perror ( " sendto error " );
+        if ( n < 0 ) 
+ {         perror ( " sendto error " );
           exit ( -1);
         }
 
@@ -189,7 +189,8 @@ int main(int argc, char *argv[]) {
   fd_set                   fds;                 // set di descrittori
   char                     buff[MAXLINE];        // input string of the user
   socklen_t                len;
-  char**                   arguments;
+  char**                   arguments = NULL;
+  int                      num_arguments;
   FILE*                    fp;
   int                      fd;
   char                     decrypted_string[MAXFILE];
@@ -287,15 +288,22 @@ int main(int argc, char *argv[]) {
 
           /* controllo se lo stdin è leggibile */
           if (FD_ISSET(fileno(stdin), &fds)) {   /*  controllo se lo stdin è nel set dei file descriptors */ 
-              bzero( &buff, sizeof(buff) );
+              ;
+              arguments = NULL;
 
               //if (fgets(buff, MAXLINE, stdin) == NULL)
                //   break; /* non vi sono dati */   -------------------------- provare a mettere fgets e fullwrite
 
-              scanf("%[^\n]", buff);
-              arguments = str_split(buff, ' ');  /* parsing the shell command */
-
+              scanf("%[^\n]s", buff);
+              printf("il buffer contiene: %s\n",  buff);
+              num_arguments = split(buff, ' ', &arguments);/* parsing the shell command */
+              while( (getchar()) != '\n');
+              if( arguments == NULL ){
+                  printf("Wrong arguments\nTry to type:\n-put\n-get\n-list\n-exit\n");
+                  continue;
+              }
               command = arguments[0];
+              printf("%s\n", command );
 
               bzero( &datagram, sizeof(datagram) );
 
@@ -482,8 +490,6 @@ int main(int argc, char *argv[]) {
                               perror("error with the arguments passed\n");
                               continue;
               }
-
-              bzero(arguments, sizeof(arguments));
 
           }
 

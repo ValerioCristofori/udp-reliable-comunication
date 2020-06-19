@@ -6,5 +6,5 @@ OBJ = server-udp.o utils.o
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-server: $(OBJ)
+server-udp: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^

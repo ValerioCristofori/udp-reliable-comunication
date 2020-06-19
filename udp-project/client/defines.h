@@ -9,3 +9,5 @@ extern int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address,
 extern int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port );
 
 extern char** str_split(char* a_str, const char a_delim);
+
+extern int split( const char *str, char c, char ***arr );

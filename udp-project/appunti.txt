@@ -1,0 +1,6 @@
+1- gestire eccezioni di file con get e put non trovati
+
+2- gestire meglio i segnali di sigpipe e sigint e sigkill ...
+	come faceva vedere lui a lezione
+
+

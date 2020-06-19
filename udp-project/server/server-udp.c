@@ -8,6 +8,7 @@
  * 			3- list command: provide the list of the directory's tree.		
  *		All this features are allowed through reliable data transfer.  
  *
+ *
  */
 
 #include <sys/types.h> 
@@ -260,7 +261,7 @@ void *client_request( void *sockfd ){
 
 
         while(1){
-
+            
             /*  setupping the struct for recv data */
             bzero( &datagram, sizeof(datagram) );
             len = sizeof(relation);
@@ -413,11 +414,11 @@ void *client_request( void *sockfd ){
               close(sock_data);
               pthread_exit(NULL);
             }
-      }      
+        }      
 
-      printf("Exiting from thread child...\n");
-      thread_death();
-      pthread_exit(NULL);
+        printf("Exiting from thread child...\n");
+        thread_death();
+        pthread_exit(NULL);
 
 
 }
