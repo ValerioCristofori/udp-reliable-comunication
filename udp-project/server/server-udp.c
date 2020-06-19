@@ -23,6 +23,7 @@
 #include <stdio.h> 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "defines.h"
 
@@ -46,6 +47,7 @@ typedef struct datagram_value {
       char file[MAXFILE];
       char error_message[32];
       int  die_sig;
+      int  err;
 
 } Datagram;
 
@@ -149,6 +151,11 @@ int filename_to_path( char* filename, char* path ){
     
     if (p != NULL) {
       fscanf(p, "%s", buffer);
+      if( strstr(buffer, filename) == NULL ){
+          printf("file doesnt exist\n");
+          return -1;
+      }
+      
       printf("result of the shell script: %s\n", buffer );
       strcpy(path, buffer); //path points to buffer head
       pclose(p);
@@ -163,6 +170,7 @@ int filename_to_path( char* filename, char* path ){
 
 
 void setup_error_message( Datagram* datagram_ptr ){
+    datagram_ptr->err = 1;
     strcpy( datagram_ptr->error_message, "Error: file not present ");
 }
 
@@ -205,7 +213,7 @@ void *client_request( void *sockfd ){
   struct  sockaddr_in     clientaddr, relation;
   Datagram                datagram;
   int                     n, sock, sock_data, fd;
-  int                     client_port, tmp;
+  int                     client_port, tmp, ret;
   socklen_t               len;
   FILE*                   fp;
   pthread_t               whoami = pthread_self();
@@ -340,23 +348,27 @@ void *client_request( void *sockfd ){
 
 
                         //controllo che il file sia presente nell'albero delle directories se si faccio il setup del datagram
-                        if( filename_to_path(datagram.filename, path) == 1 ){
+                        ret = filename_to_path(datagram.filename, path);
+                        if( ret == 1 ){
                             setup_error_message( &datagram );
                             thread_death();
                             close(sock_data);
                             pthread_exit(NULL);
-                        }
-                        printf("path file: %s\n", path );
-                        if( datagram_setup_get( &datagram, path ) == -1 ){  /* -1 if file doesn't exist */
-                            setup_error_message( &datagram );
-                            thread_death();
-                            close(sock_data);
-                            pthread_exit(NULL);
-                        }
+                        }else if( ret == -1 ){
+                            printf("send error message to the client\n");
+                            setup_error_message(&datagram);
+                        }else{
+                            printf("path file: %s\n", path );
+                            if( datagram_setup_get( &datagram, path ) == -1 ){  /* -1 if file doesn't exist */
+                                setup_error_message( &datagram );
+                                thread_death();
+                                close(sock_data);
+                                pthread_exit(NULL);
+                            }
 
-                        printf("Il contenuto del file '%s': %s\n", path, datagram.file );
+                            printf("Il contenuto del file '%s': %s\n", path, datagram.file );
 
-                        
+                        }  
                         //try to send the datagram to the client
                         n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
                                     ( struct sockaddr *)&clientaddr , sizeof( clientaddr ));

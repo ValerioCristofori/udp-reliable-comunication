@@ -6,7 +6,7 @@
  * 			2- put command: provide the upload of a specific 
  * 				file in the directory's tree.
  * 			3- list command: provide the list of the directory's tree.		
- *		All this features are allowed through reliable data transfer.  
+ *		All this features are allowed through reliabl edata transfer.  
  *
  */
 
@@ -41,6 +41,7 @@ typedef struct datagram_value {
       char file[MAXFILE];
       char error_message[32];
       int  die_sig;
+      int  err;
 
 } Datagram;
 
@@ -393,11 +394,15 @@ int main(int argc, char *argv[]) {
                               }
 
                               //datagram ricevuto
-                              
+                              printf("Datagram ricevuto (comando get)\n");
 
                               //controllo che non ci siano stati errori
                               //---------------------------------------------------- da implementare
+                              if( datagram.err == 1 ){
 
+                                  printf("%s\n", datagram.error_message );
+                                  continue;
+                              }
                                 
                               /*
                                *  voglio parsare il datagram e 
