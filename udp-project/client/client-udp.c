@@ -27,23 +27,12 @@
 
 #define SERV_PORT         2222
 #define MAXLINE           1024
-#define MAXFILE           4096
-#define FILENAME_LENGHT   32
+
 #define cipherKey         'S'
 
 
 char *gets(char *s);
 
-typedef struct datagram_value {
-      
-      char command[5];
-      char filename[FILENAME_LENGHT];
-      char file[MAXFILE];
-      char error_message[32];
-      int  die_sig;
-      int  err;
-
-} Datagram;
 
 struct sockaddr_in       servaddr;
 int                      sockfd;              // file descriptor

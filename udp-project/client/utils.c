@@ -45,10 +45,10 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
 	 *  else -1
 	 */
 
-	int sockfd;
+	int sock;
 	int option = 1;
 
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { 	/* create UDP socket */
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { 	/* create UDP socket */
 	    perror("errore in socket");
 	    return -1;
     }
@@ -57,7 +57,7 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
 	addr->sin_port = htons(num_port); /* numero di porta del server */
 
     /* permette di eseguire bind su indirizzi locali che sono gia in uso da altri socket */
-	setsockopt(sockfd ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
+	setsockopt(sock ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
 	
 	//socket of a client app
@@ -67,7 +67,7 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
 		return -1;
 	}
 
-	return sockfd;
+	return sock;
 
 	
 }
@@ -80,10 +80,10 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 	 *  else -1
 	 */
 
-	int sockfd;
+	int sock;
 	int option = 1;
 
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { 	/* create UDP socket */
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { 	/* create UDP socket */
 	    perror("errore in socket");
 	    return -1;
     }
@@ -92,7 +92,7 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 	addr->sin_port = htons(num_port); /* numero di porta del server */
 
     /* permette di eseguire bind su indirizzi locali che sono gia in uso da altri socket */
-	setsockopt(sockfd ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
+	setsockopt(sock ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
 	if( address != NULL ){	
 		addr->sin_addr.s_addr = inet_addr(address); /* il socket accetta pacchetti da l'indirizzo address */
@@ -102,12 +102,12 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 
 
 	/* assegna l'indirizzo al socket */
-	if (bind(sockfd, (struct sockaddr *)addr, sizeof(*addr)) < 0) {
+	if (bind(sock, (struct sockaddr *)addr, sizeof(*addr)) < 0) {
 	    perror("errore in bind");
 	    exit(1);
 	}
 
-	return sockfd;
+	return sock;
 	
 }
 
