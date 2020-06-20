@@ -14,7 +14,7 @@ State* state;
 
 
 
-int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, (struct sockaddr *) addr_ptr){
+int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, struct sockaddr * addr_ptr){
 
 	Packet current_packet;
 	int n, len;
@@ -39,12 +39,12 @@ int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, (struct
 	/* Send ack and store in buffer */
   	if (current_packet.seq_no == state->expected_seq_no )
     {
-      	expected_seq_no++;
+      	state->expected_seq_no++;
       	memcpy (&buffer[state->packet_size * current_packet.seq_no], current_packet.data, current_packet.length);
     }
-    printf (">>> Send ack %d\n", expected_seq_no - 1);
+    printf (">>> Send ack %d\n", state->expected_seq_no - 1);
     Packet current_ack; /* ack */
-	current_ack.seq_no = htonl (expected_seq_no - 1);
+	current_ack.seq_no = htonl (state->expected_seq_no - 1);
 	current_ack.length = htonl(0);
 
 	if (sendto(sockfd, &current_ack, sizeof(current_ack), 0,(struct sockaddr *) addr_ptr,
@@ -53,12 +53,12 @@ int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, (struct
 		    	exit(1);
 	}
 
-	return current_packet.lenght;  
+	return current_packet.length;  
 
 }
 
 
-int start_receiver( Datagram* datagram, int sockfd, (struct sockaddr *) addr_ptr, double prob_loss ){
+int start_receiver( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr, double prob_loss ){
 
 		void* buffer;
 		int   datasize = sizeof(datagram);

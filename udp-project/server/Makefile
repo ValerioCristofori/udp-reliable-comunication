@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -lpthread -pthread
 DEPS = defines.h
-OBJ = server-udp.o utils.o
+OBJ = server-udp.o utils.o gbn-sender.o gbn-receiver.o
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

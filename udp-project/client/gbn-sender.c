@@ -22,10 +22,10 @@ void start_timer(){
 		alarm(TIMEOUT);
 }
 
-int reliable_send_datagram( void* buffer, int sockfd, (struct sockaddr *) addr_ptr ){
+int reliable_send_datagram( void* buffer, int sockfd, struct sockaddr * addr_ptr ){
 
 
-		int   tmp_lenght;
+		int   tmp_length;
 		int num_packet_sent = 0;
 
 
@@ -36,25 +36,25 @@ int reliable_send_datagram( void* buffer, int sockfd, (struct sockaddr *) addr_p
 			// setup packet 
 			current_packet.seq_no = htonl(num_packet_sent);
 			if (( sizeof(buffer) - ((num_packet_sent) * state->packet_size)) >= state->packet_size) /* length packet_size doesnt except datagram */
-		        tmp_lenght = state->packet_size;
+		        tmp_length = state->packet_size;
 		    else
-		        tmp_lenght = sizeof(buffer) % state->packet_size;
-		    current_packet.length = htonl(tmp_lenght);
-		    memcpy (current_packet.data, buffer + ((num_packet_sent) * state->packet_size), tmp_lenght); /*copy buffer data */
+		        tmp_length = sizeof(buffer) % state->packet_size;
+		    current_packet.length = htonl(tmp_length);
+		    memcpy (current_packet.data, buffer + ((num_packet_sent) * state->packet_size), tmp_length); /*copy buffer data */
 
 
 		    if (sendto(sockfd, &current_packet, sizeof(current_packet), 0,(struct sockaddr *) addr_ptr,
-		       sizeof (addr_ptr)) !=  (sizeof(int)*2 + tmp_lenght) ){
+		       sizeof (addr_ptr)) !=  (sizeof(int)*2 + tmp_length) ){
 		    	perror(" sent a different number of bytes ");
 		    	exit(1);
 		    }
 
 
-			if( send_base == next_seq_no ){
+			if( state->send_base == state->next_seq_no ){
 				start_timer();
 			}
 
-			next_seq_no++;
+			state->next_seq_no++;
 			num_packet_sent++;
 
 		}
@@ -64,7 +64,7 @@ int reliable_send_datagram( void* buffer, int sockfd, (struct sockaddr *) addr_p
 
 
 
-int reliable_receive_ack( int sockfd, (struct sockaddr *) addr_ptr ){
+int reliable_receive_ack( int sockfd, struct sockaddr * addr_ptr ){
 
 	Packet ack;
 	int    byte_response;
@@ -116,7 +116,7 @@ int reliable_receive_ack( int sockfd, (struct sockaddr *) addr_ptr ){
 
 
 
-int start_sender( Datagram* datagram, int sockfd, (struct sockaddr *) addr_ptr ){
+int start_sender( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr ){
 
 	struct sigaction act;
 	void* buffer;

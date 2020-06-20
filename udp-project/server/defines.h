@@ -24,10 +24,11 @@ typedef struct state_communication {
 
 	   int window;
 	   int packet_size;
-	   int tries = 0;
-	   int next_send_base = 0;
-	   int seq_no = 0;
-	   int expected_seq_no = 0;
+	   int tries;
+	   int send_base;
+	   int next_seq_no;
+	   int seq_no;
+	   int expected_seq_no;
 
 } State;
 
@@ -38,7 +39,7 @@ typedef struct gobackn_packet{
 
 	   int seq_no;
 	   int length;
-	   void data[256];
+	   char data[256];
 }Packet;
 
 /* utils functions */
@@ -52,6 +53,6 @@ extern char** str_split(char* a_str, const char a_delim);
 
 extern int split( const char *str, char c, char ***arr );
 
-extern int start_sender( Datagram* datagram, int sockfd, (struct sockaddr *) addr_ptr );
+extern int start_sender( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr );
 
-extern int start_receiver( Datagram* datagram, int sockfd, (struct sockaddr *) addr_ptr, double prob_loss );
+extern int start_receiver( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr, double prob_loss );

@@ -40,17 +40,6 @@ pthread_mutex_t            mut = PTHREAD_MUTEX_INITIALIZER;
 
 
 
-typedef struct datagram_value {
-      
-      char command[5];
-      char filename[FILENAME_LENGHT];
-      char file[MAXFILE];
-      char error_message[32];
-      int  die_sig;
-      int  err;
-
-} Datagram;
-
 
 int stringCmpi(char *s1,char *s2)
 {
@@ -407,14 +396,16 @@ void *client_request( void *sockfd ){
                         datagram_setup_list( &datagram );
 
                         //try to send the datagram to the client
-                        n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
-                                    ( struct sockaddr *)&clientaddr , sizeof( clientaddr ));
-                        if ( n < 0 ) {
-                          perror ( " sendto error " );
-                          thread_death();
-                          close(sock_data);
-                          pthread_exit(NULL);
-                        }
+                        // n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
+                        //             ( struct sockaddr *)&clientaddr , sizeof( clientaddr ));
+                        // if ( n < 0 ) {
+                        //   perror ( " sendto error " );
+                        //   thread_death();
+                        //   close(sock_data);
+                        //   pthread_exit(NULL);
+                        // }
+
+                        start_sender(&datagram, sock_data, &clientaddr);
 
 
 
