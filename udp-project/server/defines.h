@@ -3,7 +3,9 @@
 #define MAXFILE           4096
 #define FILENAME_LENGHT   32
 #define TIMEOUT			  3
-#define MAXTRIES          10	
+#define MAXTRIES          10
+#define MAXLINE           1024
+#define PACKET_SIZE    	  256
 
 /* datagram struct */
 typedef struct datagram_value {
@@ -17,22 +19,19 @@ typedef struct datagram_value {
 
 } Datagram;
 
-extern struct datagram_value;
 
 /* state of communication */
 typedef struct state_communication {
 
 	   int window;
-	   int packet_size;
 	   int tries;
 	   int send_base;
 	   int next_seq_no;
-	   int seq_no;
+	   int packet_sent; 
 	   int expected_seq_no;
 
 } State;
 
-extern struct state_communication;
 
 /* packet struct for go back n transport */
 typedef struct gobackn_packet{
@@ -51,8 +50,8 @@ extern int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address,
 
 extern char** str_split(char* a_str, const char a_delim);
 
-extern int split( const char *str, char c, char ***arr );
+extern int split( char *str, char c, char ***arr );
 
-extern int start_sender( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr );
+extern void start_sender( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr );
 
-extern int start_receiver( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr, double prob_loss );
+extern void start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr, double prob_loss );

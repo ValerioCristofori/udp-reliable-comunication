@@ -59,11 +59,6 @@ void handler() {
 
 }
 
-int recv_datagram(){
-
-
-
-}
 
 
 // function to clear datagram 
@@ -180,7 +175,6 @@ int main(int argc, char *argv[]) {
   char                     buff[MAXLINE];        // input string of the user
   socklen_t                len;
   char**                   arguments = NULL;
-  int                      num_arguments;
   FILE*                    fp;
   int                      fd;
   char                     decrypted_string[MAXFILE];
@@ -286,7 +280,7 @@ int main(int argc, char *argv[]) {
 
               scanf("%[^\n]s", buff);
               printf("il buffer contiene: %s\n",  buff);
-              num_arguments = split(buff, ' ', &arguments);/* parsing the shell command */
+              split(buff, ' ', &arguments);/* parsing the shell command */
               while( (getchar()) != '\n');
               if( arguments == NULL ){
                   printf("Wrong arguments\nTry to type:\n-put\n-get\n-list\n-exit\n");
@@ -324,13 +318,15 @@ int main(int argc, char *argv[]) {
 
                               datagram_setup_put(  &datagram,  arguments,  fp  );
 
-                              //try to send the datagram to the server
+                              printf("Start sender\n");
+                              start_sender(&datagram, sockfd, &servaddr);
+                              /*//try to send the datagram to the server
                               n = sendto( sockfd ,  &datagram,  sizeof(datagram) , 0 ,
                                           ( struct sockaddr *)&servaddr , sizeof( servaddr ));
                               if ( n < 0 ) {
                                 perror ( " sendto error " );
                                 exit ( -1);
-                              }
+                              }*/
 
 
                               //clear datagram
@@ -363,24 +359,28 @@ int main(int argc, char *argv[]) {
 
                               datagram_setup_get( &datagram,  arguments );
 
-                              //try to send the datagram to the server
+                              printf("Start sender\n");
+                              start_sender(&datagram, sockfd, &servaddr);
+                              /*//try to send the datagram to the server
                               n = sendto( sockfd ,  &datagram,  sizeof(datagram) , 0 ,
                                           ( struct sockaddr *)&servaddr , sizeof( servaddr ));
                               if ( n < 0 ) {
                                 perror ( " sendto error " );
                                 exit ( -1);
-                              }
+                              }*/
 
                               //clear datagram
                               bzero( &datagram, sizeof(datagram) );
 
-                              len = sizeof(servaddr);
+                              printf("Start receiver\n");
+                              start_receiver(&datagram, sockfd, &servaddr, 0.1);
+                              /*len = sizeof(servaddr);
                               //aspetta la risposta del server
                               n = recvfrom( sockfd ,  &datagram,  sizeof(datagram),  0, (struct sockaddr *)&servaddr,  &len );
                               if( n <= 0 ){
                                   perror( "recvfrom error" );
                                   exit(-1);
-                              }
+                              }*/
 
                               //datagram ricevuto
                               printf("Datagram ricevuto (comando get)\n");
@@ -444,31 +444,34 @@ int main(int argc, char *argv[]) {
 
                               datagram_setup_list( &datagram,  arguments );
 
-
-                              //try to send the datagram to the server
-                              n = sendto( sockfd ,  &datagram,  sizeof(datagram) , 0 ,
-                                          ( struct sockaddr *)&servaddr , sizeof( servaddr ));
-                              if ( n < 0 ) {
-                                perror ( " sendto error " );
-                                exit ( -1);
-                              }
+                              printf("Start sender\n");
+                              start_sender(&datagram, sockfd, &servaddr);
+                              // //try to send the datagram to the server
+                              // n = sendto( sockfd ,  &datagram,  sizeof(datagram) , 0 ,
+                              //             ( struct sockaddr *)&servaddr , sizeof( servaddr ));
+                              // if ( n < 0 ) {
+                              //   perror ( " sendto error " );
+                              //   exit ( -1);
+                              // }
 
                               //clear datagram
                               bzero( &datagram, sizeof(datagram) );
 
+                              printf("Start receiver\n");
+                              start_receiver(&datagram, sockfd, &servaddr, 0.1);
 
-                              len = sizeof(servaddr);
+                              /*len = sizeof(servaddr);
                               //aspetta la risposta del server
                               n = recvfrom( sockfd ,  &datagram,  sizeof(datagram),  0, (struct sockaddr *)&servaddr,  &len );
                               if( n <= 0 ){
                                   perror( "recvfrom error" );
                                   exit(-1);
-                              }
+                              }*/
 
-                              printf("List of the files:\n%s\n", datagram.file ); // printare diveramente
+                              printf("List of the files:\n%s\n", datagram.file );
                               // attenzione all'EOF quando viene printato , non bello da vedere ------------------------------------
 
-
+                              free(&datagram);
 
 
                 

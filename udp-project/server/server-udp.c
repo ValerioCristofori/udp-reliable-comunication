@@ -28,10 +28,7 @@
 #include "defines.h"
 
 #define SERV_PORT          2222
-#define MAXLINE            1024
-#define MAXFILE            4096
 #define MAX_THREADS        10
-#define FILENAME_LENGHT    32
 #define cipherKey          'S'
 
 
@@ -109,7 +106,7 @@ int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
 int datagram_setup_list( Datagram* datagram_ptr ){
 
     FILE* fp;
-
+          printf("Open file that contains tree\n");
           fp = fopen( "tree", "r");  // prova ad aprire il file contenente l'albero
           if (fp == NULL) 
               printf("\nFile open failed!\n"); 
@@ -260,16 +257,16 @@ void *client_request( void *sockfd ){
         while(1){
             
             /*  setupping the struct for recv data */
-            bzero( &datagram, sizeof(datagram) );
-            len = sizeof(relation);
-
-            n = recvfrom( sock_data,  &datagram,  sizeof(datagram),  0, (struct sockaddr *)&clientaddr,  &len );
+            //bzero( &datagram, sizeof(datagram) );
+            printf("Start receiver\n");
+            start_receiver(&datagram, sock_data, &clientaddr, 0.1);
+            /*n = recvfrom( sock_data,  &datagram,  sizeof(datagram),  0, (struct sockaddr *)&clientaddr,  &len );
             if( n <= 0 ){
                 perror( "recvfrom error" );
                 close(sock_data);
                 thread_death();
                 pthread_exit(NULL);
-            }
+            }*/
 
             if( datagram.die_sig == 1 ){
                 printf("The client finished through signal CTRL+C\nExiting from the thread child\n" );
@@ -359,15 +356,17 @@ void *client_request( void *sockfd ){
 
                         }  
                         //try to send the datagram to the client
-                        n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
+                        
+                        /*n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
                                     ( struct sockaddr *)&clientaddr , sizeof( clientaddr ));
                         if ( n < 0 ) {
                           perror ( " sendto error " );
                           thread_death();
                           close(sock_data);
                           pthread_exit(NULL);
-                        }
-
+                        }*/
+                        printf("Start sender\n");
+                        start_sender(&datagram, sock_data, &clientaddr);
 
 
 
@@ -385,12 +384,13 @@ void *client_request( void *sockfd ){
 
                         printf("list\n" );
 
+
                         /*
                          *  eseguo uno shell script che costruisce un file
                          *  contenente l'albero delle directories e dei files
                          *  figli della directory root presente nel ./
                          */
-
+                        printf("Lauch shell script\n");
                         system("./build_tree.sh"); // eseguo lo script
 
                         datagram_setup_list( &datagram );
@@ -404,11 +404,10 @@ void *client_request( void *sockfd ){
                         //   close(sock_data);
                         //   pthread_exit(NULL);
                         // }
-
+                        printf("Start sender\n");
                         start_sender(&datagram, sock_data, &clientaddr);
 
-
-
+                        free(&datagram);
               
             }else{
 

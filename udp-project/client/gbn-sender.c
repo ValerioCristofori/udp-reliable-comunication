@@ -9,12 +9,12 @@
 
 #include "defines.h"
 
-State* state;
+State* state_send;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
 {
-  state->tries += 1;
+  state_send->tries += 1;
 
 }
 
@@ -22,61 +22,82 @@ void start_timer(){
 		alarm(TIMEOUT);
 }
 
-int reliable_send_datagram( void* buffer, int sockfd, struct sockaddr * addr_ptr ){
+void init_state_sender(){
+	state_send->window = 5;
+	state_send->tries = 0;
+	state_send->send_base = 0;
+	state_send->packet_sent = 0;
+	state_send->next_seq_no = 0;
+	state_send->expected_seq_no = 0;
+}
+
+void print_state_sender(){
+	printf("----STATE SENDER----\n");
+	printf("Window size: %d\n", state_send->window);
+	printf("Tries number: %d\n", state_send->tries);
+	printf("Send base: %d\n", state_send->send_base);
+	printf("Next sequence number: %d\n", state_send->next_seq_no);
+	printf("Expected sequence number: %d\n", state_send->expected_seq_no);
+}
+
+int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr ){
 
 
-		int   tmp_length;
-		int num_packet_sent = 0;
+		int tmp_length, n;
 
 
-
-
-		while( (state->next_seq_no < state->window + state->send_base) && (state->tries < MAXTRIES) ){
+		while( (state_send->next_seq_no < state_send->window + state_send->send_base) && (state_send->tries < MAXTRIES) ){
+			
 			Packet current_packet;
-			// setup packet 
-			current_packet.seq_no = htonl(num_packet_sent);
-			if (( sizeof(buffer) - ((num_packet_sent) * state->packet_size)) >= state->packet_size) /* length packet_size doesnt except datagram */
-		        tmp_length = state->packet_size;
+			// setup packet
+			
+			current_packet.seq_no = htonl(state_send->next_seq_no);
+			printf("Trying to send packet number %d\n", state_send->next_seq_no );
+			if (( len_buffer - ((state_send->packet_sent) * PACKET_SIZE)) >= PACKET_SIZE) /* length packet_size doesnt except datagram */
+		        tmp_length = PACKET_SIZE;
 		    else
-		        tmp_length = sizeof(buffer) % state->packet_size;
+		        tmp_length = len_buffer % PACKET_SIZE;
+		    printf("Length in byte to be sent for data %d\n", tmp_length );
 		    current_packet.length = htonl(tmp_length);
-		    memcpy (current_packet.data, buffer + ((num_packet_sent) * state->packet_size), tmp_length); /*copy buffer data */
+		    memcpy (current_packet.data, buffer + ((state_send->packet_sent) * PACKET_SIZE), tmp_length); /*copy buffer data */
 
-
-		    if (sendto(sockfd, &current_packet, sizeof(current_packet), 0,(struct sockaddr *) addr_ptr,
-		       sizeof (addr_ptr)) !=  (sizeof(int)*2 + tmp_length) ){
+		    printf("Size of the packet %ld\n", sizeof(current_packet) );
+		    n = sendto(sockfd, &current_packet, (sizeof (int) * 2) + tmp_length, 0,(struct sockaddr *) addr_ptr,sizeof(*addr_ptr));
+		    printf("%d\n", n );
+		    if ( n !=  (sizeof(int)*2 + tmp_length) ){
 		    	perror(" sent a different number of bytes ");
+
 		    	exit(1);
 		    }
 
 
-			if( state->send_base == state->next_seq_no ){
+			if( state_send->send_base == state_send->next_seq_no ){
 				start_timer();
 			}
 
-			state->next_seq_no++;
-			num_packet_sent++;
+			state_send->next_seq_no++;
+			state_send->packet_sent++;
 
 		}
 
-		return num_packet_sent;
+		return tmp_length;
 }
 
 
 
-int reliable_receive_ack( int sockfd, struct sockaddr * addr_ptr ){
+int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 	Packet ack;
 	int    byte_response;
-	int    len;
+	socklen_t    len;
 
 	len = sizeof(*addr_ptr);
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
 			if (errno == EINTR)	/* Alarm went off  */
 	  		{
-	    		if (state->tries < MAXTRIES)	/* incremented by signal handler */
+	    		if (state_send->tries < MAXTRIES)	/* incremented by signal handler */
 	      		{
-					printf ("timed out, %d more tries...\n", MAXTRIES - state->tries);
+					printf ("timed out, %d more tries...\n", MAXTRIES - state_send->tries);
 					break;
 	      		}
 	    		else{
@@ -94,18 +115,21 @@ int reliable_receive_ack( int sockfd, struct sockaddr * addr_ptr ){
 
 	if( byte_response ){
 
-			int ackno = ntohl(ack.seq_no);\
+			int ackno = ntohl(ack.seq_no);
 
-			state->send_base = ackno + 1;
-			printf ("received ack\n");
+			state_send->send_base = (ackno + 1);
+			printf ("received ack %d\n", ackno);
 
-			if( state->send_base == state->next_seq_no ){
+			if( state_send->send_base == state_send->next_seq_no ){
 				alarm (0); /* clear alarm */
-				state->tries = 0;
+				state_send->tries = 0;
+				return ackno;
+
 			}
 			else{ // not all packet acked
+				printf("Restart TO\n");
 				alarm(TIMEOUT); /* reset alarm */
-				state->tries = 0;
+				state_send->tries = 0;
 			}
 
 	}
@@ -116,15 +140,22 @@ int reliable_receive_ack( int sockfd, struct sockaddr * addr_ptr ){
 
 
 
-int start_sender( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr ){
+void start_sender( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr ){
 
 	struct sigaction act;
 	void* buffer;
-	int   datasize = sizeof(datagram);
-	int num_packet = datasize/state->packet_size;
+	int   datasize = sizeof(*datagram);
+	int   n;
+	printf("Datagram dimension %d\n", datasize );
+	int num_packet = datasize/PACKET_SIZE;
+	printf("%d\n", num_packet );
+	printf("Number of packet to be send %d\n", num_packet);
 
+	printf("Build buffer of bytes\n");
 	buffer = malloc( datasize );
 	memcpy(buffer, datagram, datasize);
+
+	state_send = malloc(sizeof(*state_send));
 
 	act.sa_handler = handler_alarm;
 	if (sigfillset (&act.sa_mask) < 0){	/* block everything in handler */
@@ -137,16 +168,22 @@ int start_sender( Datagram* datagram, int sockfd, struct sockaddr * addr_ptr ){
 		perror("sigaction() failed for SIGALRM");
 	    exit(0);
 	}
-
-	while( state->send_base < num_packet ){
-
-		reliable_send_datagram( buffer, sockfd, addr_ptr );
+	init_state_sender();
+	print_state_sender();
+	do{
+		n = reliable_send_datagram( buffer, datasize, sockfd, addr_ptr );
 
 		reliable_receive_ack( sockfd, addr_ptr );
 
+		print_state_sender();
 	}
+	while( n >= PACKET_SIZE );
+
+	printf("Read other acks\n");
+	while( (n = reliable_receive_ack(sockfd, addr_ptr) ) != num_packet );
 
 	printf("Datagram send with success\n");
+
 
 }
 
