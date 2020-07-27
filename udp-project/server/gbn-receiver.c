@@ -27,11 +27,13 @@ int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, struct 
 	memset(&current_packet, 0, sizeof(current_packet));
 	len = sizeof(*addr_ptr);
 	/* receive GBN packet */
+
 	n = recvfrom (sockfd, &current_packet, sizeof(current_packet), 0,(struct sockaddr *) addr_ptr, &len);
 	if ( n < 0 ) {
             perror ( " recvfrom error " );
             exit(1);
     }
+
     current_packet.length = ntohl (current_packet.length); 
     current_packet.seq_no = ntohl (current_packet.seq_no);
 
@@ -66,20 +68,30 @@ int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, struct 
 }
 
 
-void start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
+int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
 
 		void* buffer;
 		int   datasize = sizeof(*datagram);
+		int   size = 0, n;
 		buffer = malloc( datasize );
 		state_recv = malloc(sizeof(*state_recv));
 
 		init_state_receiver();
+		printf("Start receiving bytes\n");
 
-		while( reliable_receive_packet( buffer, prob_loss, sockfd, addr_ptr) >= PACKET_SIZE );
-					
+		while( (n = reliable_receive_packet( buffer, prob_loss, sockfd, addr_ptr) ) == PACKET_SIZE ){
+			size += n;
+		}
+		size += n;
 
-		memcpy( datagram, buffer, datasize);
 
+		printf("Bytes received %d\n", size );
+
+		//datagram = malloc( size*sizeof(char));
+
+		memcpy( datagram, buffer, size);
+
+		return size;
 
 
 

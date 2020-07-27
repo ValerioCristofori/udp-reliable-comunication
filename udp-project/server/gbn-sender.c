@@ -10,6 +10,7 @@
 #include "defines.h"
 
 State* state_send;
+int ackno = -1;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
@@ -45,8 +46,10 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 		int tmp_length, n;
 
+		tmp_length = PACKET_SIZE;
 
-		while( (state_send->next_seq_no < state_send->window + state_send->send_base) && (state_send->tries < MAXTRIES) ){
+
+		while( (state_send->next_seq_no < state_send->window + state_send->send_base) && (state_send->tries < MAXTRIES) && ( tmp_length == PACKET_SIZE ) ){
 			
 			Packet current_packet;
 			// setup packet
@@ -72,6 +75,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 
 			if( state_send->send_base == state_send->next_seq_no ){
+				
 				start_timer();
 			}
 
@@ -115,7 +119,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 	if( byte_response ){
 
-			int ackno = ntohl(ack.seq_no);
+			ackno = ntohl(ack.seq_no);
 
 			state_send->send_base = (ackno + 1);
 			printf ("received ack %d\n", ackno);
@@ -134,26 +138,31 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 	}
 
-
+	return byte_response;
 
 }
 
 
 
-void start_sender( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr ){
+void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in * addr_ptr ){
 
 	struct sigaction act;
 	void* buffer;
-	int   datasize = sizeof(*datagram);
 	int   n;
-	printf("Datagram dimension %d\n", datasize );
-	int num_packet = datasize/PACKET_SIZE;
+	printf("Datagram dimension %d\n", size );
+	int num_packet = (size/PACKET_SIZE) + 1;
 	printf("%d\n", num_packet );
 	printf("Number of packet to be send %d\n", num_packet);
 
+
+
 	printf("Build buffer of bytes\n");
-	buffer = malloc( datasize );
-	memcpy(buffer, datagram, datasize);
+	//build the buffer in a separate function
+	buffer = malloc(size);
+	memcpy(buffer, datagram, size);
+
+
+	printf("buffer %s\n", (char *)buffer );
 
 	state_send = malloc(sizeof(*state_send));
 
@@ -171,7 +180,7 @@ void start_sender( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr
 	init_state_sender();
 	print_state_sender();
 	do{
-		n = reliable_send_datagram( buffer, datasize, sockfd, addr_ptr );
+		n = reliable_send_datagram( buffer, size, sockfd, addr_ptr );
 
 		reliable_receive_ack( sockfd, addr_ptr );
 
@@ -180,9 +189,11 @@ void start_sender( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr
 	while( n >= PACKET_SIZE );
 
 	printf("Read other acks\n");
-	while( (n = reliable_receive_ack(sockfd, addr_ptr) ) != num_packet );
+	while( (state_send->next_seq_no - 1) != ackno ){
+		reliable_receive_ack(sockfd, addr_ptr);
+	}
 
-	printf("Datagram send with success\n");
+	printf("Datagram sent with success\n");
 
 
 }

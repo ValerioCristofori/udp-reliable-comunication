@@ -29,6 +29,8 @@
 
 #define SERV_PORT          2222
 #define MAX_THREADS        10
+#define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist."
+#define ERROR_SHELL_SCRIPT "Error: Server is working bad"
 #define cipherKey          'S'
 
 
@@ -57,12 +59,12 @@ char Cipher(char ch)
 }
 
 
-void decrypt_string(char* dcstring, char* str ){
+void decrypt_string(char* dcstring, char* str, int length ){
 
       int     i;
       char    ch;
 
-      for (i = 0; i < MAXFILE; i++) { 
+      for (i = 0; i < length; i++) { 
         ch = str[i]; 
         ch = Cipher(ch); 
         if (ch == EOF){ 
@@ -76,9 +78,12 @@ void decrypt_string(char* dcstring, char* str ){
 }
 
 
-int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
+int datagram_setup_get( Datagram* datagram_ptr, int last_size, char* filename ){
    
    FILE*      fp;
+   int length = 0, i;
+   char ch, ch2;
+
 
 
           fp = fopen( filename, "r"); 
@@ -91,21 +96,36 @@ int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
               printf("\nFile Successfully opened!\n");
 
           // costruisco il file del datagram attraverso il file stream
- 
-          for ( int i = 0; i < MAXFILE; i++) { 
-              char ch = fgetc(fp); 
-              char ch2 = Cipher(ch); 
+          while( (ch = fgetc(fp)) != EOF ){
+              length++;
+          }
+          datagram_ptr->length_file = length + 1;
+
+          rewind(fp);
+
+          for ( i = 0; i < length + 1; i++) {  // +1 for the '/0' char
+
+              ch = fgetc(fp);  
+              ch2 = Cipher(ch); 
               datagram_ptr->file[i] = ch2; 
-              if (ch == EOF) 
-                  return 1; 
-          } 
-          return 0;
+          }
+ 
+          datagram_ptr->file[i] = EOF;
+          printf("File dimension %d\n", datagram_ptr->length_file);
+          datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+          return datagram_ptr->datagram_size;
 }
 
 
-int datagram_setup_list( Datagram* datagram_ptr ){
+int datagram_setup_list( Datagram* datagram_ptr){
 
     FILE* fp;
+    char ch;
+    int length = 0;
+    int i;
+
+
+
           printf("Open file that contains tree\n");
           fp = fopen( "tree", "r");  // prova ad aprire il file contenente l'albero
           if (fp == NULL) 
@@ -113,21 +133,31 @@ int datagram_setup_list( Datagram* datagram_ptr ){
           else
               printf("\nFile Successfully opened!\n");
 
-          for ( int i = 0; i < MAXFILE; i++) { 
-              char ch = fgetc(fp);  
-              datagram_ptr->file[i] = ch; 
-              if (ch == EOF) 
-                  return 1; 
+          while( (ch = fgetc(fp)) != EOF ){
+              length++;
           }
 
-          return 0;
+          datagram_ptr->length_file = length + 1;
+
+          rewind(fp);
+
+          for ( i = 0; i < length; i++) { 
+              ch = fgetc(fp);  
+              datagram_ptr->file[i] = ch; 
+          }
+          datagram_ptr->file[i] = EOF;
+          printf("File dimension %d\n", datagram_ptr->length_file);
+          datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+          return datagram_ptr->datagram_size;
+
+    
 
 }
 
 
 int filename_to_path( char* filename, char* path ){
     FILE *p;
-    char command[FILENAME_LENGHT + 16];
+    char command[FILENAME_LENGTH + 16];
     char buffer[MAXLINE];
 
     sprintf(command, "./search_dir.sh %s", filename);
@@ -155,9 +185,11 @@ int filename_to_path( char* filename, char* path ){
 
 
 
-void setup_error_message( Datagram* datagram_ptr ){
+
+
+void setup_error_message( Datagram* datagram_ptr, const char *message ){
     datagram_ptr->err = 1;
-    strcpy( datagram_ptr->error_message, "Error: file not present ");
+    strcpy( datagram_ptr->error_message, message );
 }
 
 
@@ -186,6 +218,18 @@ int generate_random_num_port(){
 
 }
 
+void print_datagram( Datagram *datagram_ptr){
+
+      printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
+      printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
+      printf("Filename size: %d, sizeof(): %ld\n", datagram_ptr->length_filename , sizeof(datagram_ptr->length_filename));
+      printf("Datagram size: %d, sizeof(): %ld\n", datagram_ptr->datagram_size, sizeof(datagram_ptr->datagram_size) );
+      printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );
+      printf("File content: %s, sizeof(): %ld\n", datagram_ptr->file, sizeof(datagram_ptr->file) );
+      printf("Error message: %s, sizeof(): %ld\n", datagram_ptr->error_message, sizeof(datagram_ptr->error_message) );
+      printf("Code error: %d, sizeof(): %ld\n", datagram_ptr->err, sizeof(datagram_ptr->err) );
+}
+
 
 void print_buff_datagram( Datagram* datagram_ptr ){
       printf("command : %s, filename: %s\n", datagram_ptr->command, datagram_ptr->filename );
@@ -197,15 +241,16 @@ void print_buff_datagram( Datagram* datagram_ptr ){
 void *client_request( void *sockfd ){
 
   struct  sockaddr_in     clientaddr, relation;
-  Datagram                datagram;
+  Datagram                *datagram_ptr;
   int                     n, sock, sock_data, fd;
-  int                     client_port, tmp, ret;
+  int                     client_port, tmp, ret, size, size_temp;
   socklen_t               len;
   FILE*                   fp;
   pthread_t               whoami = pthread_self();
   char                    decrypted_string[MAXFILE];
   char                    path_file[40];
   char                    path[MAXLINE];
+  char                    *filename;
   short                   syn;
 
         printf("Created a thread handler\n");  
@@ -216,8 +261,7 @@ void *client_request( void *sockfd ){
 
         memcpy(&sock,sockfd,sizeof(sock));
 
-        /*  setupping the struct for recv data */
-        bzero( &datagram, sizeof(datagram) );
+
         len = sizeof(relation);
 
         n = recvfrom( sock,  &syn,  sizeof(syn),  0, (struct sockaddr *)&relation,  &len );
@@ -228,7 +272,6 @@ void *client_request( void *sockfd ){
         } 
         printf("Syn received: %u\n", syn );
 
-        print_buff_datagram(&datagram);
         client_port = generate_random_num_port();
         printf("%d\n", client_port );
 
@@ -251,31 +294,31 @@ void *client_request( void *sockfd ){
             perror("socket init error");
             pthread_exit( NULL );
         }
+
         
 
 
         while(1){
             
-            /*  setupping the struct for recv data */
-            //bzero( &datagram, sizeof(datagram) );
-            printf("Start receiver\n");
-            start_receiver(&datagram, sock_data, &clientaddr, 0.1);
-            /*n = recvfrom( sock_data,  &datagram,  sizeof(datagram),  0, (struct sockaddr *)&clientaddr,  &len );
-            if( n <= 0 ){
-                perror( "recvfrom error" );
-                close(sock_data);
-                thread_death();
-                pthread_exit(NULL);
-            }*/
+            //malloc datagram and clear
+            datagram_ptr = malloc( sizeof(*datagram_ptr) );
+            memset( datagram_ptr, 0, sizeof(*datagram_ptr));
 
-            if( datagram.die_sig == 1 ){
+
+            printf("Start receiver\n");
+            size = start_receiver(datagram_ptr, sock_data, &clientaddr, 0.1);
+
+            print_datagram(datagram_ptr);
+
+
+            /*if( datagram_ptr->die_sig == 1 ){
                 printf("The client finished through signal CTRL+C\nExiting from the thread child\n" );
                 thread_death();
                 close(sock_data);
                 pthread_exit(NULL);
-            }
+            }*/
 
-            if( stringCmpi( datagram.command, "put") == 0 ){
+            if( strcmp( datagram_ptr->command, "put") == 0 ){
 
                         
 
@@ -284,9 +327,12 @@ void *client_request( void *sockfd ){
 
                         printf("put\n" );
 
-                        decrypt_string( decrypted_string, datagram.file );
+                        decrypt_string( decrypted_string, datagram_ptr->file, datagram_ptr->length_file );
                         printf("%s\n", decrypted_string );
-                        sprintf(path_file, "root/%s", datagram.filename);
+
+                        filename = malloc((datagram_ptr->length_filename + 1)*sizeof(char));
+                        strncpy(filename, datagram_ptr->filename ,datagram_ptr->length_filename);
+                        sprintf(path_file, "root/%s", filename);
                         
 
                         if ((fd = open( path_file, O_CREAT | O_RDWR | O_TRUNC, 0666)) == -1) {
@@ -311,15 +357,17 @@ void *client_request( void *sockfd ){
                         }
                         fflush(fp);
 
-                        printf("Success on download file %s\n", datagram.filename );
+                        printf("Success on download file %s\n", filename );
 
 
-                        
+                        free(datagram_ptr);
+                        free(filename);
 
 
 
 
-            }else if( stringCmpi(datagram.command, "get") == 0 ){
+
+            }else if( strcmp(datagram_ptr->command, "get") == 0 ){
               
                         
 
@@ -331,51 +379,47 @@ void *client_request( void *sockfd ){
                         /*  --------------------------------------------------------------------------------
                          *  cambiare il path del file ---------> trovare il file nell'albero e aggiungere dir padri
                          */
-
+                        printf("%d\n", datagram_ptr->length_filename );
+                        filename = malloc((datagram_ptr->length_filename + 1)*sizeof(char));
+                        strncpy(filename, datagram_ptr->filename ,datagram_ptr->length_filename);
 
                         //controllo che il file sia presente nell'albero delle directories se si faccio il setup del datagram
-                        ret = filename_to_path(datagram.filename, path);
+                        ret = filename_to_path(filename, path);
                         if( ret == 1 ){
-                            setup_error_message( &datagram );
+                            setup_error_message( datagram_ptr, ERROR_SHELL_SCRIPT );
                             thread_death();
                             close(sock_data);
                             pthread_exit(NULL);
                         }else if( ret == -1 ){
                             printf("send error message to the client\n");
-                            setup_error_message(&datagram);
+                            setup_error_message( datagram_ptr, ERROR_FILE_DOESNT_EXIST );
+
                         }else{
                             printf("path file: %s\n", path );
-                            if( datagram_setup_get( &datagram, path ) == -1 ){  /* -1 if file doesn't exist */
-                                setup_error_message( &datagram );
+                            if( (size = datagram_setup_get( datagram_ptr, size_temp, path ) ) == -1 ){  /* -1 if file doesn't exist */
                                 thread_death();
                                 close(sock_data);
                                 pthread_exit(NULL);
+                            }else{
+
+                                printf("Il contenuto del file '%s': %s\n", path, datagram_ptr->file );
+
                             }
 
-                            printf("Il contenuto del file '%s': %s\n", path, datagram.file );
-
                         }  
-                        //try to send the datagram to the client
                         
-                        /*n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
-                                    ( struct sockaddr *)&clientaddr , sizeof( clientaddr ));
-                        if ( n < 0 ) {
-                          perror ( " sendto error " );
-                          thread_death();
-                          close(sock_data);
-                          pthread_exit(NULL);
-                        }*/
                         printf("Start sender\n");
-                        start_sender(&datagram, sock_data, &clientaddr);
+                        start_sender(datagram_ptr, size, sock_data, &clientaddr);
 
 
-
+                        free(datagram_ptr);
+                        free(filename);
 
 
 
 
               
-            }else if( stringCmpi(datagram.command, "list") == 0 ){
+            }else if( strcmp(datagram_ptr->command, "list") == 0 ){
 
                         
 
@@ -393,23 +437,30 @@ void *client_request( void *sockfd ){
                         printf("Lauch shell script\n");
                         system("./build_tree.sh"); // eseguo lo script
 
-                        datagram_setup_list( &datagram );
+                        size = datagram_setup_list( datagram_ptr );
 
-                        //try to send the datagram to the client
-                        // n = sendto( sock_data ,  &datagram,  sizeof(datagram) , 0 ,
-                        //             ( struct sockaddr *)&clientaddr , sizeof( clientaddr ));
-                        // if ( n < 0 ) {
-                        //   perror ( " sendto error " );
-                        //   thread_death();
-                        //   close(sock_data);
-                        //   pthread_exit(NULL);
-                        // }
+
                         printf("Start sender\n");
-                        start_sender(&datagram, sock_data, &clientaddr);
+                        start_sender(datagram_ptr, datagram_ptr->datagram_size, sock_data, &clientaddr);
 
-                        free(&datagram);
+                        free(datagram_ptr);
+
               
-            }else{
+            }else if( strcmp(datagram_ptr->command, "exit") == 0 ){
+
+                        //------------------- exit body --------------------------
+
+
+                        printf("exit\n");
+
+
+                        printf("Exiting from thread child...\n");
+                        thread_death();
+                        close(sock_data);
+                        pthread_exit(NULL);
+
+            }
+            else{
 
               perror("error with the arguments passed\n");
               thread_death();
@@ -420,6 +471,7 @@ void *client_request( void *sockfd ){
 
         printf("Exiting from thread child...\n");
         thread_death();
+        close(sock_data);
         pthread_exit(NULL);
 
 

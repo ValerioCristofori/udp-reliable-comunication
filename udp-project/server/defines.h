@@ -1,7 +1,8 @@
 #pragma once
 
 #define MAXFILE           4096
-#define FILENAME_LENGHT   32
+#define FILENAME_LENGTH   32
+#define ERROR_MESSAGE_LENGTH  32
 #define TIMEOUT			  3
 #define MAXTRIES          10
 #define MAXLINE           1024
@@ -11,10 +12,12 @@
 typedef struct datagram_value {
       
       char command[5];
-      char filename[FILENAME_LENGHT];
-      char file[MAXFILE];
-      char error_message[32];
-      int  die_sig;
+      char filename[FILENAME_LENGTH];
+      int  length_filename;
+      int  datagram_size;
+      int  length_file;
+      char file[MAXFILE];  
+      char error_message[ERROR_MESSAGE_LENGTH];
       int  err;
 
 } Datagram;
@@ -52,6 +55,6 @@ extern char** str_split(char* a_str, const char a_delim);
 
 extern int split( char *str, char c, char ***arr );
 
-extern void start_sender( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr );
+extern void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in* addr_ptr );
 
-extern void start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr, double prob_loss );
+extern int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr, double prob_loss ); /* return number bytes read */

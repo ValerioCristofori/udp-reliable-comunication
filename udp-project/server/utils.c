@@ -117,9 +117,10 @@ char** str_split(char* a_str, const char a_delim){
     size_t count     = 0;
     char* tmp        = a_str;
     char* last_comma = 0;
-    char delim[2];
+    char delim[3];
     delim[0] = a_delim;
-    delim[1] = 0;
+    delim[1] = '\0';
+    delim[2] = 0;
 
     /* Count how many elements will be extracted. */
     while (*tmp)

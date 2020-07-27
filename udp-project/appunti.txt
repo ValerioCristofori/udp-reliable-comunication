@@ -4,6 +4,5 @@
 	come faceva vedere lui a lezione
 
 3- put creare directory ( es dir1/prova.txt ) creo la dir dir1
-(fatto)4- get lo vorrei poter fare anche solo con filename
 
-5- mettere sigalarm per connessione client server dove il server non e in ascolto
+6- attenzione al sigint che invia datagramma al server
