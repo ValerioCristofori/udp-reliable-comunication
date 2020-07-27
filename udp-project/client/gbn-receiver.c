@@ -68,7 +68,7 @@ int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, struct 
 }
 
 
-int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
+int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
 
 		void* buffer;
 		int   datasize = sizeof(*datagram);
@@ -90,6 +90,10 @@ int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in * addr_pt
 		//datagram = malloc( size*sizeof(char));
 
 		memcpy( datagram, buffer, size);
+
+		if( (datagram->err) =! 0 ){  // there are some signal error
+			return -1;
+		}
 
 		return size;
 

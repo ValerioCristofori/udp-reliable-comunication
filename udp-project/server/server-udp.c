@@ -184,6 +184,23 @@ int filename_to_path( char* filename, char* path ){
 }
 
 
+void manage_error_signal(Datagram *datagram_ptr, int sockfd ){
+      
+      switch(datagram_ptr->err){
+
+          case 1:
+          default:
+                
+                printf("The client finished through signal CTRL+C\nExiting from the thread child\n" );
+                thread_death();
+                close(sockfd);
+                pthread_exit(NULL);
+
+
+      }
+
+}
+
 
 
 
@@ -307,6 +324,9 @@ void *client_request( void *sockfd ){
 
             printf("Start receiver\n");
             size = start_receiver(datagram_ptr, sock_data, &clientaddr, 0.1);
+            if( size == -1 ){
+                  manage_error_signal(datagram_ptr, sock_data);
+            }
 
             print_datagram(datagram_ptr);
 

@@ -37,35 +37,8 @@ char *gets(char *s);
 
 struct sockaddr_in       servaddr;
 int                      sockfd;              // file descriptor
-Datagram                 datagram;
-Datagram                 *datagram_ptr;
+Datagram                *datagram_ptr;
 
-
-void handler_alarm_conn (int ign)  /* handler for SIGALRM */
-{
-    printf("Error with the connection: server doesn't respond\n");
-    exit(0);
-}
-
-void handler() {
-    
-    int       n;    
-       
-
-        //setup exit message in datagram.error_message
-        //datagram.die_sig = 1; 
-
-        //inviare exit al server su un campo particolare
-        n = sendto( sockfd ,  &datagram,  sizeof(datagram) , 0 ,
-                    ( struct sockaddr *)&servaddr , sizeof( servaddr ));
-        if ( n < 0 ) 
- {         perror ( " sendto error " );
-          exit ( -1);
-        }
-
-        close(sockfd);
-
-}
 
 void print_datagram( Datagram *datagram_ptr){
 
@@ -94,66 +67,11 @@ void print_file( char *file, int length ){
   printf("\n");
 }
 
-
-
-// function to clear datagram 
-void clear_datagram(Datagram* datagram){
-
-}
-
-int stringCmpi(char *s1, char *s2)
-{
-    int i;
-    for(i=0; s1[i]!='\0'; i++)
-    {
-        if( toupper(s1[i])!=toupper(s2[i]) )
-            return 1;           
-    }
-    return 0;
-}
-
-
 // function to encrypt/decrypt 
 char Cipher(char ch) 
 { 
     return ch ^ cipherKey; 
 }
-
-void decrypt_string(char* dcstring, char* str, int length ){
-
-      int     i;
-      char    ch;
-
-      for (i = 0; i < length; i++) { 
-        ch = str[i]; 
-        ch = Cipher(ch); 
-        if (ch == EOF){ 
-            return;
-        } 
-        else{
-            dcstring[i] = ch;
-        }
-      }
-
-}
-
-
-void path_to_filename( char *path , char *filename ){
-
-      int l=0;
-      char* ssc;
-      
-      ssc = strstr(path, "/");
-      do{
-          l = strlen(ssc) + 1;
-          path = &path[strlen(path)-l+2];
-          ssc = strstr(path, "/");
-      }while(ssc);
-
-      strcpy( filename, path );
-}
-
-
 
 int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE* fp ){
         
@@ -251,6 +169,104 @@ int datagram_setup_exit( Datagram* datagram_ptr, char** arguments ){
 
 }
 
+int datagram_setup_exit_signal( Datagram* datagram_ptr){
+
+
+        // setupping the struct 
+        datagram_ptr->length_file = 0;
+        datagram_ptr->err = 1;
+        datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+
+        print_datagram(datagram_ptr);
+
+
+        return datagram_ptr->datagram_size;
+ 
+        
+
+}
+
+
+void handler_alarm_conn (int ign)  /* handler for SIGALRM */
+{
+    printf("Error with the connection: server doesn't respond\n");
+    exit(0);
+}
+
+void handler_sigint() { 
+       
+    int size;
+
+        //setup exit message in datagram.error_message
+        //datagram.die_sig = 1; 
+
+        //inviare exit al server 
+        //settando a 1 il campo err della struct datagram
+        //malloc datagram and clear
+        datagram_ptr = malloc( sizeof(*datagram_ptr) );
+        memset( datagram_ptr, 0, sizeof(*datagram_ptr));
+        
+        size = datagram_setup_exit_signal( datagram_ptr );
+
+        printf("Start sender\n");
+        start_sender(datagram_ptr, size, sockfd, &servaddr);
+        
+
+}
+
+
+
+// function to clear datagram 
+void clear_datagram(Datagram* datagram){
+
+}
+
+int stringCmpi(char *s1, char *s2)
+{
+    int i;
+    for(i=0; s1[i]!='\0'; i++)
+    {
+        if( toupper(s1[i])!=toupper(s2[i]) )
+            return 1;           
+    }
+    return 0;
+}
+
+
+void decrypt_string(char* dcstring, char* str, int length ){
+
+      int     i;
+      char    ch;
+
+      for (i = 0; i < length; i++) { 
+        ch = str[i]; 
+        ch = Cipher(ch); 
+        if (ch == EOF){ 
+            return;
+        } 
+        else{
+            dcstring[i] = ch;
+        }
+      }
+
+}
+
+
+void path_to_filename( char *path , char *filename ){
+
+      int l=0;
+      char* ssc;
+      
+      ssc = strstr(path, "/");
+      do{
+          l = strlen(ssc) + 1;
+          path = &path[strlen(path)-l+2];
+          ssc = strstr(path, "/");
+      }while(ssc);
+
+      strcpy( filename, path );
+}
+
 
 
 
@@ -345,7 +361,7 @@ int main(int argc, char *argv[]) {
 
   printf("Ricevuto nuovo socket con porta %d\n", ntohs(servaddr.sin_port) );
 
-  sa.sa_handler = handler;
+  sa.sa_handler = handler_sigint;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_SIGINFO;
 
@@ -482,10 +498,7 @@ int main(int argc, char *argv[]) {
                               printf("Datagram ricevuto (comando get)\n");
 
                               //controllo che non ci siano stati errori
-                              if( datagram.err == 1 ){
-                                  printf("%s\n", datagram_ptr->error_message );
-                                  continue;
-                              }
+                              
                                                           
                               /*
                                *  Parsing the datagram and

@@ -165,7 +165,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	printf("buffer %s\n", (char *)buffer );
 
 	state_send = malloc(sizeof(*state_send));
-
 	act.sa_handler = handler_alarm;
 	if (sigfillset (&act.sa_mask) < 0){	/* block everything in handler */
 	    perror("sigfillset() failed");

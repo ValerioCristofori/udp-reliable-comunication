@@ -6,3 +6,6 @@
 3- put creare directory ( es dir1/prova.txt ) creo la dir dir1
 
 6- attenzione al sigint che invia datagramma al server
+7- testare con piu client che inoltrano segnali
+8- fare switch case sul client per messaggi di errore
+	es: 1 errore si control+c, 2 errore si sigpipe ecc
