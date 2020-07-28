@@ -271,6 +271,40 @@ void handler_sigint() {
 
 }
 
+void build_directories( char *path, char *dirs ){
+
+      char ch;
+      int count = 0, i = 0;    //number of '/'
+
+      ch = path[0];
+
+      while( ch != '\0' ){
+
+          if( ch == '/' ) count++;
+          ch = path[i++];
+
+      }
+
+      
+      i = 0;
+      while( count ){
+
+          ch = path[i];
+          if( ch == '/' ) count--;
+          
+          dirs[i] = ch;
+          i++;
+
+      }
+      dirs[i++] = '\0';
+
+
+      printf("%s\n", dirs );
+
+
+
+}
+
 
 
 
@@ -286,8 +320,10 @@ void *client_request( void *sockfd ){
   pthread_t               whoami = pthread_self();
   char                    decrypted_string[MAXFILE];
   char                    path_file[40];
+  char                    command[FILENAME_LENGTH + 16];
   char                    path[MAXLINE];
   char                    *filename;
+  char                    *dirs;
   short                   syn;
   
 
@@ -374,6 +410,22 @@ void *client_request( void *sockfd ){
                         filename = malloc((datagram_ptr->length_filename + 1)*sizeof(char));
                         strncpy(filename, datagram_ptr->filename ,datagram_ptr->length_filename);
                         sprintf(path_file, "root/%s", filename);
+
+                        if( strchr(filename, '/') != NULL){  //check if the program have to make some dirs
+
+                              //take the name of all the dirs
+                              //deleting the last chars until '/'
+                              printf("Build directories\n");
+                              dirs = malloc( sizeof(filename) );
+                              build_directories(filename, dirs);
+
+                              //run the shell script for making directory/ies
+                              sprintf(command, "./make_dirs.sh %s", dirs);
+                              system(command);
+
+
+                            
+                        }
                         
 
                         if ((fd = open( path_file, O_CREAT | O_RDWR | O_TRUNC, 0666)) == -1) {

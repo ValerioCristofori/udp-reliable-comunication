@@ -4,9 +4,11 @@
 │       └── seconda-prova.txt
 ├── aaa
 ├── dir1
+│   └── pippo
 ├── prova1
 ├── prova3
+├── response.txt
 └── valerio
     └── prova2
 
-3 directories, 6 files
+4 directories, 7 files

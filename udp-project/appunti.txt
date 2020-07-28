@@ -1,6 +1,4 @@
 2- gestire meglio i segnali di sigpipe e sigint e sigkill ...
 	come faceva vedere lui a lezione
 
-3- put creare directory ( es dir1/prova.txt ) creo la dir dir1
-
 7- testare con piu client che inoltrano segnali
