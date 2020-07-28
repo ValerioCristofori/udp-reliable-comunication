@@ -91,7 +91,7 @@ int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_pt
 
 		memcpy( datagram, buffer, size);
 
-		if( (datagram->err) =! 0 ){  // there are some signal error
+		if( datagram->err ){  // there are some signal error
 			return -1;
 		}
 

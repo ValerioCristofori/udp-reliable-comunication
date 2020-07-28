@@ -8,6 +8,12 @@
 #define MAXLINE           1024
 #define PACKET_SIZE    	  256
 
+#define ERROR_SIGINT_CLIENT   	 "Error: Client finished through signal CTRL+C\nExiting from the thread child.\n"      //case 1
+#define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
+#define ERROR_SHELL_SCRIPT 		 "Error: Server is working bad.\n"													   //case 3
+#define ERROR_SIGINT_SERVER      "Error: Server finished through signal CTRL+C.\n"									   //case 4
+
+
 /* datagram struct */
 typedef struct datagram_value {
       

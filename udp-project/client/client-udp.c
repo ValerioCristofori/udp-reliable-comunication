@@ -197,9 +197,6 @@ void handler_sigint() {
        
     int size;
 
-        //setup exit message in datagram.error_message
-        //datagram.die_sig = 1; 
-
         //inviare exit al server 
         //settando a 1 il campo err della struct datagram
         //malloc datagram and clear
@@ -268,7 +265,30 @@ void path_to_filename( char *path , char *filename ){
 }
 
 
+void manage_error(Datagram *datagram_ptr, int sockfd ){
+      
+      switch(datagram_ptr->err){
 
+
+          case 2:
+
+                printf("%s\n", ERROR_FILE_DOESNT_EXIST );
+                break;
+
+          case 3:
+
+                printf("%s\n", ERROR_SHELL_SCRIPT );
+                break;
+
+          case 4:
+
+                printf("%s\n", ERROR_SIGINT_SERVER );
+                break;
+
+
+      }
+
+}
 
 
 
@@ -492,6 +512,10 @@ int main(int argc, char *argv[]) {
 
                               printf("Start receiver\n");
                               size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);
+                              if(size == -1){
+                                    manage_error(datagram_ptr, sockfd);
+                                    goto retry;
+                              }
 
 
                               //datagram ricevuto
@@ -566,6 +590,10 @@ int main(int argc, char *argv[]) {
 
                               printf("Start receiver\n");
                               size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);
+                              if(size == -1){
+                                    manage_error(datagram_ptr, sockfd);
+                                    goto retry;
+                              }
                               printf("Bytes received %d\n", size );
                               print_datagram(datagram_ptr);
 

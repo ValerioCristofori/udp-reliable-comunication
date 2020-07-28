@@ -29,8 +29,6 @@
 
 #define SERV_PORT          2222
 #define MAX_THREADS        10
-#define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist."
-#define ERROR_SHELL_SCRIPT "Error: Server is working bad"
 #define cipherKey          'S'
 
 
@@ -59,6 +57,35 @@ char Cipher(char ch)
 }
 
 
+void print_datagram( Datagram *datagram_ptr){
+
+      printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
+      printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
+      printf("Filename size: %d, sizeof(): %ld\n", datagram_ptr->length_filename , sizeof(datagram_ptr->length_filename));
+      printf("Datagram size: %d, sizeof(): %ld\n", datagram_ptr->datagram_size, sizeof(datagram_ptr->datagram_size) );
+      printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );
+      printf("File content: %s, sizeof(): %ld\n", datagram_ptr->file, sizeof(datagram_ptr->file) );
+      printf("Error message: %s, sizeof(): %ld\n", datagram_ptr->error_message, sizeof(datagram_ptr->error_message) );
+      printf("Code error: %d, sizeof(): %ld\n", datagram_ptr->err, sizeof(datagram_ptr->err) );
+}
+
+
+void print_buff_datagram( Datagram* datagram_ptr ){
+      printf("command : %s, filename: %s\n", datagram_ptr->command, datagram_ptr->filename );
+}
+
+void thread_death(){
+    pthread_mutex_lock(&mut);
+    numthreads--;
+    pthread_mutex_unlock(&mut);
+}
+
+void thread_birth(){
+    pthread_mutex_lock(&mut);
+    numthreads++;
+    pthread_mutex_unlock(&mut);  
+}
+
 void decrypt_string(char* dcstring, char* str, int length ){
 
       int     i;
@@ -78,7 +105,7 @@ void decrypt_string(char* dcstring, char* str, int length ){
 }
 
 
-int datagram_setup_get( Datagram* datagram_ptr, int last_size, char* filename ){
+int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
    
    FILE*      fp;
    int length = 0, i;
@@ -154,6 +181,19 @@ int datagram_setup_list( Datagram* datagram_ptr){
 
 }
 
+int datagram_setup_error( Datagram *datagram_ptr, int error ){
+
+      // setupping the struct 
+      datagram_ptr->length_file = 0;
+      datagram_ptr->err = error;
+      datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+
+      print_datagram(datagram_ptr);
+
+
+      return datagram_ptr->datagram_size;
+}
+
 
 int filename_to_path( char* filename, char* path ){
     FILE *p;
@@ -204,27 +244,6 @@ void manage_error_signal(Datagram *datagram_ptr, int sockfd ){
 
 
 
-void setup_error_message( Datagram* datagram_ptr, const char *message ){
-    datagram_ptr->err = 1;
-    strcpy( datagram_ptr->error_message, message );
-}
-
-
-void thread_death(){
-    pthread_mutex_lock(&mut);
-    numthreads--;
-    pthread_mutex_unlock(&mut);
-}
-
-void thread_birth(){
-    pthread_mutex_lock(&mut);
-    numthreads++;
-    pthread_mutex_unlock(&mut);  
-}
-
-
-
-
 int generate_random_num_port(){
   int lower = 2224;
   int upper = 5000;
@@ -235,22 +254,23 @@ int generate_random_num_port(){
 
 }
 
-void print_datagram( Datagram *datagram_ptr){
+void handler_sigint() { 
+    /*  
+    int size;
 
-      printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
-      printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
-      printf("Filename size: %d, sizeof(): %ld\n", datagram_ptr->length_filename , sizeof(datagram_ptr->length_filename));
-      printf("Datagram size: %d, sizeof(): %ld\n", datagram_ptr->datagram_size, sizeof(datagram_ptr->datagram_size) );
-      printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );
-      printf("File content: %s, sizeof(): %ld\n", datagram_ptr->file, sizeof(datagram_ptr->file) );
-      printf("Error message: %s, sizeof(): %ld\n", datagram_ptr->error_message, sizeof(datagram_ptr->error_message) );
-      printf("Code error: %d, sizeof(): %ld\n", datagram_ptr->err, sizeof(datagram_ptr->err) );
+
+        //malloc datagram and clear
+        datagram_ptr = malloc( sizeof(*datagram_ptr) );
+        memset( datagram_ptr, 0, sizeof(*datagram_ptr));
+        
+        size = datagram_setup_error( datagram_ptr, 4 );
+
+        printf("Start sender\n");
+        start_sender(datagram_ptr, size, sockfd, &servaddr);
+    */
+
 }
 
-
-void print_buff_datagram( Datagram* datagram_ptr ){
-      printf("command : %s, filename: %s\n", datagram_ptr->command, datagram_ptr->filename );
-}
 
 
 
@@ -260,7 +280,7 @@ void *client_request( void *sockfd ){
   struct  sockaddr_in     clientaddr, relation;
   Datagram                *datagram_ptr;
   int                     n, sock, sock_data, fd;
-  int                     client_port, tmp, ret, size, size_temp;
+  int                     client_port, tmp, ret, size;
   socklen_t               len;
   FILE*                   fp;
   pthread_t               whoami = pthread_self();
@@ -269,6 +289,7 @@ void *client_request( void *sockfd ){
   char                    path[MAXLINE];
   char                    *filename;
   short                   syn;
+  
 
         printf("Created a thread handler\n");  
         /* instead call the pthread_join func */
@@ -406,17 +427,18 @@ void *client_request( void *sockfd ){
                         //controllo che il file sia presente nell'albero delle directories se si faccio il setup del datagram
                         ret = filename_to_path(filename, path);
                         if( ret == 1 ){
-                            setup_error_message( datagram_ptr, ERROR_SHELL_SCRIPT );
-                            thread_death();
-                            close(sock_data);
-                            pthread_exit(NULL);
+                            printf("send error message to the client\n");
+                            size = datagram_setup_error( datagram_ptr, 3 );
+
+                        
                         }else if( ret == -1 ){
                             printf("send error message to the client\n");
-                            setup_error_message( datagram_ptr, ERROR_FILE_DOESNT_EXIST );
+                            size = datagram_setup_error( datagram_ptr, 2 );
+                            
 
                         }else{
                             printf("path file: %s\n", path );
-                            if( (size = datagram_setup_get( datagram_ptr, size_temp, path ) ) == -1 ){  /* -1 if file doesn't exist */
+                            if( (size = datagram_setup_get( datagram_ptr, path ) ) == -1 ){  /* -1 if file doesn't exist */
                                 thread_death();
                                 close(sock_data);
                                 pthread_exit(NULL);
@@ -505,61 +527,71 @@ int main(int argc, char *argv[]) {
   fd_set                sockets;
   struct sockaddr_in	  servaddr;
   pthread_t             threads[MAX_THREADS];
+  struct sigaction      sa;
   
 
 
 
-  /* setting the address */
-  memset((void *)&servaddr, 0, sizeof(servaddr));
-  // create the udp socket 
-  sockfd = udp_socket_init_server( &servaddr, NULL, SERV_PORT );
-  if( sockfd == -1 ){
-    perror("socket server init error");
-    exit(-1);
-  }
+      /* setting the address */
+      memset((void *)&servaddr, 0, sizeof(servaddr));
+      // create the udp socket 
+      sockfd = udp_socket_init_server( &servaddr, NULL, SERV_PORT );
+      if( sockfd == -1 ){
+        perror("socket server init error");
+        exit(-1);
+      }
 
- 
-  /* 
-   *  finished bind between socket and address
-   *  Server can read on this socket
-   */
-
-
-  FD_ZERO(&sockets);         /* Inizializza l’insieme di descrittori dei sockets con l’insieme vuoto */
-  FD_SET(sockfd,&sockets);   /* Aggiunge socket all'insieme, mettendo ad 1 il bit */
-  fcntl(sockfd,F_SETFL,O_NONBLOCK);    /* rendo il recv non bloccante */
-  
-
-  while (1) {
-          //    -------------------    Server body
-          
-          /* 
-           * Controllo in lettura lo stato dei socket 
-           * Multiplexing dell' I/O
-           * il server può gestire tutte le richieste tramite un singolo processo (main)
-           * pero attenzione ---> gestire piu client
-           * 
-          */
+     
+      /* 
+       *  finished bind between socket and address
+       *  Server can read on this socket
+       */
 
 
-          if ( select(sockfd + 1,&sockets,NULL,NULL,NULL) < 0) {
-              perror("select()");
-              return  -1;
-          }
+      FD_ZERO(&sockets);         /* Inizializza l’insieme di descrittori dei sockets con l’insieme vuoto */
+      FD_SET(sockfd,&sockets);   /* Aggiunge socket all'insieme, mettendo ad 1 il bit */
+      fcntl(sockfd,F_SETFL,O_NONBLOCK);    /* rendo il recv non bloccante */
+
+      sa.sa_handler = handler_sigint;
+      sigemptyset(&sa.sa_mask);
+      sa.sa_flags = SA_SIGINFO;
+
+      if (sigaction(SIGINT, &sa, NULL) == -1) {
+          printf("sigaction error\n");
+          exit(-1); 
+      }
+      
+
+      while (1) {
+              //    -------------------    Server body
+              
+              /* 
+               * Controllo in lettura lo stato dei socket 
+               * Multiplexing dell' I/O
+               * il server può gestire tutte le richieste tramite un singolo processo (main)
+               * pero attenzione ---> gestire piu client
+               * 
+              */
 
 
-          /*
-           *  al ritorno della select controllo 
-           *  servo il descrittore che ha causato 
-           *  l'uscita creando un thread handler
-          */
-                           
-          if (numthreads < MAX_THREADS) {
-              pthread_create(&threads[numthreads],NULL, client_request ,(void *)&sockfd);
-          }
-          printf("Currently handling client. %d threads in use.\n",numthreads);   
-  }
-  
-  //normal exit
-  exit(0);
+              if ( select(sockfd + 1,&sockets,NULL,NULL,NULL) < 0) {
+                  perror("select()");
+                  return  -1;
+              }
+
+
+              /*
+               *  al ritorno della select controllo 
+               *  servo il descrittore che ha causato 
+               *  l'uscita creando un thread handler
+              */
+                               
+              if (numthreads < MAX_THREADS) {
+                  pthread_create(&threads[numthreads],NULL, client_request ,(void *)&sockfd);
+              }
+              printf("Currently handling client. %d threads in use.\n",numthreads);   
+      }
+      
+      //normal exit
+      exit(0);
 }
