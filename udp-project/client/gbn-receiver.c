@@ -18,7 +18,7 @@ void init_state_receiver(){
 }
 
 
-int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, struct sockaddr_in * addr_ptr){
+int reliable_receive_packet( char  *buffer, double prob_loss, int sockfd, struct sockaddr_in * addr_ptr){
 
 	Packet current_packet;
 	int n;
@@ -37,10 +37,11 @@ int reliable_receive_packet( void* buffer, double prob_loss, int sockfd, struct 
     current_packet.length = ntohl (current_packet.length); 
     current_packet.seq_no = ntohl (current_packet.seq_no);
 
-	/*if( prob_loss > drand48() ){
-		printf("packet loss\n");
-		exit(0);
-	}*/
+	if( drand48() < prob_loss ){
+		printf("---------------- PACKET LOST ---------------\n");
+		return 0;
+	}
+	
 	printf (">>> Received packet %d with length %d\n", current_packet.seq_no, current_packet.length);
 
 	/* Send ack and store in buffer */
@@ -79,7 +80,7 @@ int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_pt
 		init_state_receiver();
 		printf("Start receiving bytes\n");
 
-		while( (n = reliable_receive_packet( buffer, prob_loss, sockfd, addr_ptr) ) == PACKET_SIZE ){
+		while( (n = reliable_receive_packet( buffer, prob_loss, sockfd, addr_ptr) ) == PACKET_SIZE || n == 0  ){
 			size += n;
 		}
 		size += n;

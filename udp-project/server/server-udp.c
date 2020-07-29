@@ -283,7 +283,7 @@ void build_directories( char *path, char *dirs ){
           if( ch == '/' ) count++;
           ch = path[i++];
 
-      }
+      } 
 
       
       i = 0;

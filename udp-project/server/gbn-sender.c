@@ -147,7 +147,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in * addr_ptr ){
 
 	struct sigaction act;
-	void* buffer;
+	char *buffer;
 	int   n;
 	printf("Datagram dimension %d\n", size );
 	int num_packet = (size/PACKET_SIZE) + 1;
