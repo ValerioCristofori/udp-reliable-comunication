@@ -38,6 +38,7 @@ typedef struct state_communication {
 	   int next_seq_no;
 	   int packet_sent; 
 	   int expected_seq_no;
+	   int ack_no;
 
 } State;
 

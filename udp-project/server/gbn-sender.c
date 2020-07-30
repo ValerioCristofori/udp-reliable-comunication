@@ -11,10 +11,16 @@
 
 State* state_send;
 int ackno = -1;
+int window_ack = 0;
+int byte_reads = PACKET_SIZE;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
 {
+  printf("-------------------------- TIMEOUT -------------------------------\n");
+  state_send->next_seq_no = state_send->send_base;
+  state_send->packet_sent = state_send->send_base;
+  byte_reads = PACKET_SIZE;
   state_send->tries += 1;
 
 }
@@ -97,6 +103,8 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 	len = sizeof(*addr_ptr);
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
+			
+
 			if (errno == EINTR)	/* Alarm went off  */
 	  		{
 	    		if (state_send->tries < MAXTRIES)	/* incremented by signal handler */
@@ -117,14 +125,20 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 	}
 
-	if( byte_response ){
 
-			ackno = ntohl(ack.seq_no);
+	ackno = ntohl(ack.seq_no);
+	printf("Window of acks %d\n", window_ack );
 
+
+	if( byte_response && ( (window_ack == ackno + 1) || (window_ack == ackno - 1) || (window_ack == ackno) ) ){
+
+
+			window_ack = ackno + 1;
 			state_send->send_base = (ackno + 1);
 			printf ("received ack %d\n", ackno);
 
 			if( state_send->send_base == state_send->next_seq_no ){
+				window_ack--;
 				alarm (0); /* clear alarm */
 				state_send->tries = 0;
 				return ackno;
@@ -138,6 +152,8 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 	}
 
+	
+
 	return byte_response;
 
 }
@@ -148,7 +164,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	struct sigaction act;
 	char *buffer;
-	int   n;
 	printf("Datagram dimension %d\n", size );
 	int num_packet = (size/PACKET_SIZE) + 1;
 	printf("%d\n", num_packet );
@@ -166,31 +181,27 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	state_send = malloc(sizeof(*state_send));
 	act.sa_handler = handler_alarm;
-	if (sigfillset (&act.sa_mask) < 0){	/* block everything in handler */
-	    perror("sigfillset() failed");
-	    exit(0);
-	}
-	act.sa_flags = 0;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = SA_SIGINFO;
 
-    if (sigaction (SIGALRM, &act, 0) < 0){
+    if (sigaction (SIGALRM, &act, NULL) < 0){
 		perror("sigaction() failed for SIGALRM");
 	    exit(0);
 	}
+
+
 	init_state_sender();
 	print_state_sender();
 	do{
-		n = reliable_send_datagram( buffer, size, sockfd, addr_ptr );
+		if(byte_reads >= PACKET_SIZE)
+			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr );
 
 		reliable_receive_ack( sockfd, addr_ptr );
 
 		print_state_sender();
+		printf("------ packet sent %d\n", state_send->packet_sent );
 	}
-	while( n >= PACKET_SIZE );
-
-	printf("Read other acks\n");
-	while( (state_send->next_seq_no - 1) != ackno ){
-		reliable_receive_ack(sockfd, addr_ptr);
-	}
+	while( ackno != num_packet - 1 ); 
 
 	printf("Datagram sent with success\n");
 
