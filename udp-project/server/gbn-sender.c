@@ -10,6 +10,7 @@
 #include "defines.h"
 
 State* state_send;
+pthread_t th;
 int ackno = -1;
 int window_ack = 0;
 int byte_reads = PACKET_SIZE;
@@ -25,9 +26,6 @@ void handler_alarm (int ign)	/* handler for SIGALRM */
 
 }
 
-void start_timer(){
-		alarm(TIMEOUT);
-}
 
 void init_state_sender(){
 	state_send->window = 5;
@@ -47,7 +45,22 @@ void print_state_sender(){
 	printf("Expected sequence number: %d\n", state_send->expected_seq_no);
 }
 
-int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr ){
+void *start_timer_thread( void *whoami ){
+
+	pthread_t *t = (pthread_t *)whoami;
+	sleep(TIMEOUT);
+	pthread_kill( *t , SIGALRM);
+
+}
+
+void *clear_timer_thread( void* whoami ){
+
+	pthread_t *t = (pthread_t *)whoami;
+	pthread_kill( *t , SIGALRM);
+
+}
+
+int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
 
 
 		int tmp_length, n;
@@ -79,12 +92,6 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 		    	exit(1);
 		    }
 
-
-			if( state_send->send_base == state_send->next_seq_no ){
-				
-				start_timer();
-			}
-
 			state_send->next_seq_no++;
 			state_send->packet_sent++;
 
@@ -95,7 +102,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 
 
-int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
+int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
 
 	Packet ack;
 	int    byte_response;
@@ -139,14 +146,14 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 			if( state_send->send_base == state_send->next_seq_no ){
 				window_ack--;
-				alarm (0); /* clear alarm */
+				pthread_create(&th, NULL, clear_timer_thread, (void*)whoami );
 				state_send->tries = 0;
 				return ackno;
 
 			}
 			else{ // not all packet acked
 				printf("Restart TO\n");
-				alarm(TIMEOUT); /* reset alarm */
+				pthread_create(&th, NULL, start_timer_thread, (void*)whoami );
 				state_send->tries = 0;
 			}
 
@@ -159,8 +166,8 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 }
 
 
-
-void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in * addr_ptr ){
+//
+void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
 
 	struct sigaction act;
 	char *buffer;
@@ -192,16 +199,21 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	init_state_sender();
 	print_state_sender();
+	pthread_create(&th, NULL, start_timer_thread, (void*)whoami);
+
 	do{
 		if(byte_reads >= PACKET_SIZE)
-			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr );
+			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr, whoami );
 
-		reliable_receive_ack( sockfd, addr_ptr );
+		reliable_receive_ack( sockfd, addr_ptr, whoami );
 
 		print_state_sender();
 		printf("------ packet sent %d\n", state_send->packet_sent );
 	}
 	while( ackno != num_packet - 1 ); 
+
+	pthread_create(&th, NULL, clear_timer_thread, (void*)whoami );
+	pthread_join(th, NULL);
 
 	printf("Datagram sent with success\n");
 

@@ -503,7 +503,7 @@ void *client_request( void *sockfd ){
                         }  
                         
                         printf("Start sender\n");
-                        start_sender(datagram_ptr, size, sock_data, &clientaddr);
+                        start_sender(datagram_ptr, size, sock_data, &clientaddr, whoami);
 
 
                         free(datagram_ptr);
@@ -535,7 +535,7 @@ void *client_request( void *sockfd ){
 
 
                         printf("Start sender\n");
-                        start_sender(datagram_ptr, datagram_ptr->datagram_size, sock_data, &clientaddr);
+                        start_sender(datagram_ptr, datagram_ptr->datagram_size, sock_data, &clientaddr, whoami);
 
                         free(datagram_ptr);
 

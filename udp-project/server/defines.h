@@ -62,6 +62,6 @@ extern char** str_split(char* a_str, const char a_delim);
 
 extern int split( char *str, char c, char ***arr );
 
-extern void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in* addr_ptr );
+extern void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in* addr_ptr , pthread_t whoami );
 
 extern int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr, double prob_loss ); /* return number bytes read */
