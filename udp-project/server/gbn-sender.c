@@ -11,10 +11,10 @@
 
 State* state_send;
 pthread_t th;
-int ackno = -1;
-int window_ack = 0;
-int byte_reads = PACKET_SIZE;
-int running = 0;
+int ackno;
+int window_ack;
+int byte_reads;
+int running;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
@@ -42,6 +42,11 @@ void init_state_sender(){
 	state_send->packet_sent = 0;
 	state_send->next_seq_no = 0;
 	state_send->expected_seq_no = 0;
+	byte_reads = PACKET_SIZE;
+	window_ack = 0;
+	running = 0;
+	ackno = -1;
+
 }
 
 void print_state_sender(){
@@ -202,6 +207,7 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		perror("sigaction() failed for SIGALRM");
 	    exit(0);
 	}
+	
 
 
 	init_state_sender();
@@ -218,7 +224,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	}
 	while( ackno != num_packet - 1 ); 
 
-	pthread_kill(th, SIGINT);
 	running = 0;
     pthread_create(&th, NULL, start_timer_thread, (void*)whoami );
     pthread_join(th, NULL);

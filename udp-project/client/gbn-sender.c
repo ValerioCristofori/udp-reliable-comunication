@@ -10,9 +10,9 @@
 #include "defines.h"
 
 State* state_send;
-int ackno = -1;
-int window_ack = 0;
-int byte_reads = PACKET_SIZE;
+int ackno;
+int window_ack;
+int byte_reads;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
@@ -36,6 +36,9 @@ void init_state_sender(){
 	state_send->packet_sent = 0;
 	state_send->next_seq_no = 0;
 	state_send->expected_seq_no = 0;
+	byte_reads = PACKET_SIZE;
+	window_ack = 0;
+	ackno = -1;
 }
 
 void print_state_sender(){
