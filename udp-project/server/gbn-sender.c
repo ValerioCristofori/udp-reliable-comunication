@@ -14,15 +14,23 @@ pthread_t th;
 int ackno = -1;
 int window_ack = 0;
 int byte_reads = PACKET_SIZE;
+int running = 0;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
 {
-  printf("-------------------------- TIMEOUT -------------------------------\n");
-  state_send->next_seq_no = state_send->send_base;
-  state_send->packet_sent = state_send->send_base;
-  byte_reads = PACKET_SIZE;
-  state_send->tries += 1;
+  		if(running){
+				printf("-------------------------- TIMEOUT -------------------------------\n");
+				state_send->next_seq_no = state_send->send_base;
+				state_send->packet_sent = state_send->send_base;
+				byte_reads = PACKET_SIZE;
+				state_send->tries += 1;
+
+		}else{
+				printf("Cleared timeout.\n");
+		}
+
+		pthread_kill(th, SIGINT);
 
 }
 
@@ -54,10 +62,8 @@ void *start_timer_thread( void *whoami ){
 }
 
 void *clear_timer_thread( void* whoami ){
-
 	pthread_t *t = (pthread_t *)whoami;
 	pthread_kill( *t , SIGALRM);
-
 }
 
 int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
@@ -146,13 +152,14 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr, pthread_t w
 
 			if( state_send->send_base == state_send->next_seq_no ){
 				window_ack--;
-				pthread_create(&th, NULL, clear_timer_thread, (void*)whoami );
+				running = 0;
 				state_send->tries = 0;
 				return ackno;
 
 			}
 			else{ // not all packet acked
 				printf("Restart TO\n");
+				running = 1;
 				pthread_create(&th, NULL, start_timer_thread, (void*)whoami );
 				state_send->tries = 0;
 			}
@@ -199,7 +206,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	init_state_sender();
 	print_state_sender();
-	pthread_create(&th, NULL, start_timer_thread, (void*)whoami);
 
 	do{
 		if(byte_reads >= PACKET_SIZE)
@@ -212,8 +218,10 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	}
 	while( ackno != num_packet - 1 ); 
 
-	pthread_create(&th, NULL, clear_timer_thread, (void*)whoami );
-	pthread_join(th, NULL);
+	pthread_kill(th, SIGINT);
+	running = 0;
+    pthread_create(&th, NULL, start_timer_thread, (void*)whoami );
+    pthread_join(th, NULL);
 
 	printf("Datagram sent with success\n");
 
