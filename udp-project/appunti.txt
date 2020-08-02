@@ -1,3 +1,5 @@
+1-se perdo l'ultimo pacchetto non funziona
+3- prova il gbn-sender con piu' thread  ----> togliere le var globali se non funziona.
 2- gestire meglio i segnali di sigpipe e sigint e sigkill ...
 	come faceva vedere lui a lezione
 

@@ -5,6 +5,7 @@
 #include <string.h>		
 #include <unistd.h>		
 #include <errno.h>		
+#include <pthread.h>
 #include <signal.h>	
 
 #include "defines.h"
@@ -14,25 +15,9 @@ pthread_t th;
 int ackno;
 int window_ack;
 int byte_reads;
-int running;
 
 
-void handler_alarm (int ign)	/* handler for SIGALRM */
-{
-  		if(running){
-				printf("-------------------------- TIMEOUT -------------------------------\n");
-				state_send->next_seq_no = state_send->send_base;
-				state_send->packet_sent = state_send->send_base;
-				byte_reads = PACKET_SIZE;
-				state_send->tries += 1;
 
-		}else{
-				printf("Cleared timeout.\n");
-		}
-
-		pthread_kill(th, SIGINT);
-
-}
 
 
 void init_state_sender(){
@@ -44,7 +29,6 @@ void init_state_sender(){
 	state_send->expected_seq_no = 0;
 	byte_reads = PACKET_SIZE;
 	window_ack = 0;
-	running = 0;
 	ackno = -1;
 
 }
@@ -61,15 +45,40 @@ void print_state_sender(){
 void *start_timer_thread( void *whoami ){
 
 	pthread_t *t = (pthread_t *)whoami;
+
 	sleep(TIMEOUT);
 	pthread_kill( *t , SIGALRM);
 
+	pthread_exit((void *)0);
+	
+	
+
 }
 
-void *clear_timer_thread( void* whoami ){
-	pthread_t *t = (pthread_t *)whoami;
-	pthread_kill( *t , SIGALRM);
+void clear_all_threads(){
+
+	printf("Clearing all alarms\n");
+	
+
+	printf("kill %ld\n", th );
+	pthread_cancel(th);
+
+	
 }
+
+void handler_alarm (int ign)	/* handler for SIGALRM */
+{
+  	
+			printf("-------------------------- TIMEOUT -------------------------------\n");
+			state_send->next_seq_no = state_send->send_base;
+			state_send->packet_sent = state_send->send_base;
+			byte_reads = PACKET_SIZE;
+			state_send->tries += 1;
+
+			
+
+}
+
 
 int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
 
@@ -157,15 +166,19 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr, pthread_t w
 
 			if( state_send->send_base == state_send->next_seq_no ){
 				window_ack--;
-				running = 0;
+				clear_all_threads();
 				state_send->tries = 0;
 				return ackno;
 
 			}
 			else{ // not all packet acked
 				printf("Restart TO\n");
-				running = 1;
+				if( th != 0 ){
+					printf("kill %ld\n", th );
+					pthread_cancel(th);
+				}
 				pthread_create(&th, NULL, start_timer_thread, (void*)whoami );
+				printf("Created timer\n");
 				state_send->tries = 0;
 			}
 
@@ -207,15 +220,16 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		perror("sigaction() failed for SIGALRM");
 	    exit(0);
 	}
-	
 
 
 	init_state_sender();
 	print_state_sender();
+	
 
 	do{
 		if(byte_reads >= PACKET_SIZE)
 			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr, whoami );
+		
 
 		reliable_receive_ack( sockfd, addr_ptr, whoami );
 
@@ -224,9 +238,7 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	}
 	while( ackno != num_packet - 1 ); 
 
-	running = 0;
-    pthread_create(&th, NULL, start_timer_thread, (void*)whoami );
-    pthread_join(th, NULL);
+	clear_all_threads();
 
 	printf("Datagram sent with success\n");
 
