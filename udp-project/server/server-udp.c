@@ -28,13 +28,12 @@
 #include "defines.h"
 
 #define SERV_PORT          2222
-#define MAX_THREADS        10
 #define cipherKey          'S'
 
 
 int                        numthreads = 0;
 pthread_mutex_t            mut = PTHREAD_MUTEX_INITIALIZER;
-
+R  **relations;
 
 
 
@@ -211,7 +210,10 @@ int filename_to_path( char* filename, char* path ){
           printf("file doesnt exist\n");
           return -1;
       }
-      
+      if( strchr(buffer, ' ') == NULL ){
+          printf("too many file matches with this filename\n");
+          return -2;
+      }  
       printf("result of the shell script: %s\n", buffer );
       strcpy(path, buffer); //path points to buffer head
       pclose(p);
@@ -254,22 +256,7 @@ int generate_random_num_port(){
 
 }
 
-void handler_sigint() { 
-    /*  
-    int size;
 
-
-        //malloc datagram and clear
-        datagram_ptr = malloc( sizeof(*datagram_ptr) );
-        memset( datagram_ptr, 0, sizeof(*datagram_ptr));
-        
-        size = datagram_setup_error( datagram_ptr, 4 );
-
-        printf("Start sender\n");
-        start_sender(datagram_ptr, size, sockfd, &servaddr);
-    */
-
-}
 
 void build_directories( char *path, char *dirs ){
 
@@ -387,14 +374,6 @@ void *client_request( void *sockfd ){
 
             print_datagram(datagram_ptr);
 
-
-            /*if( datagram_ptr->die_sig == 1 ){
-                printf("The client finished through signal CTRL+C\nExiting from the thread child\n" );
-                thread_death();
-                close(sock_data);
-                pthread_exit(NULL);
-            }*/
-
             if( strcmp( datagram_ptr->command, "put") == 0 ){
 
                         
@@ -488,6 +467,11 @@ void *client_request( void *sockfd ){
                             size = datagram_setup_error( datagram_ptr, 2 );
                             
 
+                        }else if( ret == -2 ){
+
+                            printf("send error message to the client\n");
+                            size = datagram_setup_error( datagram_ptr, 5 );
+
                         }else{
                             printf("path file: %s\n", path );
                             if( (size = datagram_setup_get( datagram_ptr, path ) ) == -1 ){  /* -1 if file doesn't exist */
@@ -579,7 +563,6 @@ int main(int argc, char *argv[]) {
   fd_set                sockets;
   struct sockaddr_in	  servaddr;
   pthread_t             threads[MAX_THREADS];
-  struct sigaction      sa;
   
 
 
@@ -604,14 +587,9 @@ int main(int argc, char *argv[]) {
       FD_SET(sockfd,&sockets);   /* Aggiunge socket all'insieme, mettendo ad 1 il bit */
       fcntl(sockfd,F_SETFL,O_NONBLOCK);    /* rendo il recv non bloccante */
 
-      sa.sa_handler = handler_sigint;
-      sigemptyset(&sa.sa_mask);
-      sa.sa_flags = SA_SIGINFO;
 
-      if (sigaction(SIGINT, &sa, NULL) == -1) {
-          printf("sigaction error\n");
-          exit(-1); 
-      }
+      //malloc the struct for connection 
+      relations = malloc(MAX_THREADS*sizeof(R *));
       
 
       while (1) {

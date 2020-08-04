@@ -10,16 +10,14 @@
 #include "defines.h"
 
 
-State* state_recv;
-
-void init_state_receiver(){
-	state_recv->window = 5;
-	state_recv->expected_seq_no = 0;
-	state_recv->ack_no = -1;
+void init_state_receiver(State *s){
+	s->window = 5;
+	s->expected_seq_no = 0;
+	s->ack_no = -1;
 }
 
 
-int reliable_receive_packet( char  *buffer, double prob_loss, int sockfd, struct sockaddr_in * addr_ptr){
+int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockfd, struct sockaddr_in * addr_ptr){
 
 	Packet current_packet;
 	int n;
@@ -49,20 +47,20 @@ int reliable_receive_packet( char  *buffer, double prob_loss, int sockfd, struct
 	/* Send ack and store in buffer */
 	
 
-  	printf("Expected sequence number: %d\n", state_recv->expected_seq_no );
-  	if (current_packet.seq_no == state_recv->expected_seq_no )
+  	printf("Expected sequence number: %d\n", s->expected_seq_no );
+  	if (current_packet.seq_no == s->expected_seq_no )
     {
       	
       	memcpy (&buffer[PACKET_SIZE * current_packet.seq_no], current_packet.data, current_packet.length);
-      	state_recv->ack_no = current_packet.seq_no;
-      	state_recv->expected_seq_no++;
+      	s->ack_no = current_packet.seq_no;
+      	s->expected_seq_no++;
 
     }else{
     	current_packet.length = 0;
     }
-    printf (">>> Send ack %d\n", state_recv->ack_no );
+    printf (">>> Send ack %d\n", s->ack_no );
     Packet current_ack; /* ack */
-	current_ack.seq_no = htonl(state_recv->ack_no );
+	current_ack.seq_no = htonl(s->ack_no );
 	current_ack.length = htonl(0);
 
 	if (sendto(sockfd, &current_ack, sizeof(current_ack), 0,(struct sockaddr *) addr_ptr,
@@ -80,15 +78,16 @@ int reliable_receive_packet( char  *buffer, double prob_loss, int sockfd, struct
 int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
 
 		void* buffer;
+		State  *s;
 		int   datasize = sizeof(*datagram);
 		int   size = 0, n;
 		buffer = malloc( datasize );
-		state_recv = malloc(sizeof(*state_recv));
+		s = malloc(sizeof(*s));
 
-		init_state_receiver();
+		init_state_receiver(s);
 		printf("Start receiving bytes\n");
 
-		while( (n = reliable_receive_packet( buffer, prob_loss, sockfd, addr_ptr) ) == PACKET_SIZE || n == 0  ){
+		while( (n = reliable_receive_packet(s, buffer, prob_loss, sockfd, addr_ptr) ) == PACKET_SIZE || n == 0  ){
 			size += n;
 		}
 		size += n;

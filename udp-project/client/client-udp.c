@@ -283,6 +283,11 @@ void manage_error(Datagram *datagram_ptr, int sockfd ){
           case 4:
 
                 printf("%s\n", ERROR_SIGINT_SERVER );
+                exit(-1);
+
+          case 5:
+
+                printf("%s\n", ERROR_TOO_MANY_MATCHES );
                 break;
 
 

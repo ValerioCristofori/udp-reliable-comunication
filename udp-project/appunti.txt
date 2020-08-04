@@ -1,6 +1,3 @@
-1-se perdo l'ultimo pacchetto non funziona
-3- prova il gbn-sender con piu' thread  ----> togliere le var globali se non funziona.
 2- gestire meglio i segnali di sigpipe e sigint e sigkill ...
-	come faceva vedere lui a lezione
-
-7- testare con piu client che inoltrano segnali
+9- gestire errore file troppo grandi da caricare (put)
+10- rendere dinamica la quantita' dei byte da inviare

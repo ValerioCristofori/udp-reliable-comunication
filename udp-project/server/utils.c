@@ -15,6 +15,7 @@
 #include "defines.h"
 
 
+
 ssize_t FullWrite ( int fd , const void * buf , size_t count ){
 
 	size_t nleft;

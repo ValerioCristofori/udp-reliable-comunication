@@ -12,6 +12,7 @@
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
 #define ERROR_SHELL_SCRIPT 		 "Error: Server is working bad.\n"													   //case 3
 #define ERROR_SIGINT_SERVER      "Error: Server finished through signal CTRL+C.\n"									   //case 4
+#define ERROR_TOO_MANY_MATCHES   "Error: Too many matches with the input filename.\nRetry more specific request.\n"    //case 5
 
 
 /* datagram struct */

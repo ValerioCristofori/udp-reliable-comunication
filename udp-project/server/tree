@@ -5,11 +5,14 @@
 ├── aaa
 ├── dir1
 │   └── pippo
+├── image.jpg
 ├── Makefile
 ├── prova1
 ├── prova3
+├── response
 ├── response.txt
+├── tttt.txt
 └── valerio
     └── prova2
 
-4 directories, 8 files
+4 directories, 11 files
