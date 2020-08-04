@@ -90,6 +90,12 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE* fp ){
         while( (ch = fgetc(fp)) != EOF ){
             length++;
         }
+	
+      	if( length >= MAXFILE ){
+            printf("Length of file %d\n", length );
+            return -1;
+      	}	
+
         datagram_ptr->length_file = length + 1;
 
         rewind(fp);
@@ -130,11 +136,9 @@ int datagram_setup_get( Datagram* datagram_ptr, char** arguments ){
         return datagram_ptr->datagram_size;
         
 
-}
+} 
 
-
-int datagram_setup_list( Datagram* datagram_ptr, char** arguments ){
-
+int datagram_setup_list( Datagram* datagram_ptr, char** arguments ){ 
 
         // setupping the struct 
         strcpy( datagram_ptr->command, arguments[0] );
@@ -288,7 +292,7 @@ void manage_error(Datagram *datagram_ptr, int sockfd ){
           case 5:
 
                 printf("%s\n", ERROR_TOO_MANY_MATCHES );
-                break;
+			break;
 
 
       }
@@ -477,6 +481,10 @@ int main(int argc, char *argv[]) {
                                   printf("\nFile Successfully opened!\n"); 
 
                               size = datagram_setup_put(  datagram_ptr,  arguments,  fp  );
+                              if( size == -1 ){
+                                  printf("Error: file too large\nSend file not greater than %d\n", MAXFILE);
+                                  goto retry;
+                              }
 
                               printf("Start sender\n");
                               start_sender(datagram_ptr, size, sockfd, &servaddr);
@@ -536,7 +544,6 @@ int main(int argc, char *argv[]) {
 
 
 
-                              //------------------------------------ manage input valerio/prova2
 
 
 
