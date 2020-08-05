@@ -1,3 +1,2 @@
 2- gestire meglio i segnali di sigpipe e sigint e sigkill ...
-9- attenzione: non invia immagini! 
 0- rendere dinamica la quantita' dei byte da inviare

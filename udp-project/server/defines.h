@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAXFILE           4096
+#define MAXFILE           4200
 #define FILENAME_LENGTH   32
 #define ERROR_MESSAGE_LENGTH  32
 #define TIMEOUT			  3

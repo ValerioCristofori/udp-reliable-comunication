@@ -85,29 +85,26 @@ void thread_birth(){
     pthread_mutex_unlock(&mut);  
 }
 
-void decrypt_string(char* dcstring, char* str, int length ){
+void decrypt_content(FILE *fp, char* str, int length ){
 
       int     i;
       char    ch;
 
-      for (i = 0; i < length; i++) { 
-        ch = str[i]; 
-        ch = Cipher(ch); 
-        if (ch == EOF){ 
-            return;
-        } 
-        else{
-            dcstring[i] = ch;
-        }
-      }
-
+      
+      for (i = 0; i<length; i++){ 
+    
+          // Input string into the file 
+          // single character at a time 
+          ch = Cipher(str[i]);
+          fputc(ch, fp); 
+     }
 }
 
 
 int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
    
    FILE*      fp;
-   int length = 0, i;
+   int length, i;
    char ch, ch2;
 
 
@@ -122,9 +119,9 @@ int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
               printf("\nFile Successfully opened!\n");
 
           // costruisco il file del datagram attraverso il file stream
-          while( (ch = fgetc(fp)) != EOF ){
-              length++;
-          }
+          fseek(fp, 0, SEEK_END);
+          length = ftell(fp);
+          fseek(fp, 0, SEEK_SET);
           datagram_ptr->length_file = length + 1;
 
           rewind(fp);
@@ -147,7 +144,7 @@ int datagram_setup_list( Datagram* datagram_ptr){
 
     FILE* fp;
     char ch;
-    int length = 0;
+    int length;
     int i;
 
 
@@ -159,9 +156,9 @@ int datagram_setup_list( Datagram* datagram_ptr){
           else
               printf("\nFile Successfully opened!\n");
 
-          while( (ch = fgetc(fp)) != EOF ){
-              length++;
-          }
+          fseek(fp, 0, SEEK_END);
+          length = ftell(fp);
+          fseek(fp, 0, SEEK_SET);
 
           datagram_ptr->length_file = length + 1;
 
@@ -205,12 +202,12 @@ int filename_to_path( char* filename, char* path ){
     p = popen(command, "r");
     
     if (p != NULL) {
-      fscanf(p, "%s", buffer);
+      fscanf(p, "%[^\n]", buffer);
       if( strstr(buffer, filename) == NULL ){
           printf("file doesnt exist\n");
           return -1;
       }
-      if( strchr(buffer, ' ') == NULL ){
+      if( strstr(buffer, "./root/") != NULL ){
           printf("too many file matches with this filename\n");
           return -2;
       }  
@@ -305,7 +302,6 @@ void *client_request( void *sockfd ){
   socklen_t               len;
   FILE*                   fp;
   pthread_t               whoami = pthread_self();
-  char                    decrypted_string[MAXFILE];
   char                    path_file[40];
   char                    command[FILENAME_LENGTH + 16];
   char                    path[MAXLINE];
@@ -382,10 +378,6 @@ void *client_request( void *sockfd ){
                         
 
                         printf("put\n" );
-
-                        decrypt_string( decrypted_string, datagram_ptr->file, datagram_ptr->length_file );
-                        printf("%s\n", decrypted_string );
-
                         filename = malloc((datagram_ptr->length_filename + 1)*sizeof(char));
                         strncpy(filename, datagram_ptr->filename ,datagram_ptr->length_filename);
                         sprintf(path_file, "root/%s", filename);
@@ -421,12 +413,8 @@ void *client_request( void *sockfd ){
                             pthread_exit(NULL);
                         }
 
-                        if ( fprintf( fp, "%s", decrypted_string ) < 0 ){
-                            perror ( " fprintf error " );
-                            thread_death();
-                            close(sock_data);
-                            pthread_exit(NULL);
-                        }
+                        decrypt_content(fp, datagram_ptr->file, datagram_ptr->length_file);
+
                         fflush(fp);
 
                         printf("Success on download file %s\n", filename );

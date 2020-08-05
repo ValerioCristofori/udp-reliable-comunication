@@ -73,9 +73,9 @@ char Cipher(char ch)
     return ch ^ cipherKey; 
 }
 
-int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE* fp ){
+int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
         
-        int length = 0, i;
+        int length, i;
         char ch, ch2;
 
 
@@ -87,22 +87,24 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE* fp ){
         datagram_ptr->length_filename = strlen(arguments[1]);
 
         // build the attr datagram->file with the file stream
-        while( (ch = fgetc(fp)) != EOF ){
-            length++;
-        }
+        fseek(fp, 0, SEEK_END);
+        length = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
 	
       	if( length >= MAXFILE ){
             printf("Length of file %d\n", length );
             return -1;
       	}	
+        
+        printf("%d\n", length );
 
-        datagram_ptr->length_file = length + 1;
+        datagram_ptr->length_file = length;
 
         rewind(fp);
 
-        for ( i = 0; i < length + 1; i++) {  // +1 for the '/0' char
+        for ( i = 0; i < length; i++) {  // +1 for the '/0' char
 
-            ch = fgetc(fp);  
+            ch = fgetc(fp); 
             ch2 = Cipher(ch); 
             datagram_ptr->file[i] = ch2; 
         }
@@ -110,6 +112,7 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE* fp ){
         datagram_ptr->file[i] = EOF;
         printf("File dimension %d\n", datagram_ptr->length_file);
         datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+        printf("Datagram dimension %d\n", datagram_ptr->datagram_size );
 
         print_datagram(datagram_ptr);
         return datagram_ptr->datagram_size;
@@ -215,13 +218,6 @@ void handler_sigint() {
 
 }
 
-
-
-// function to clear datagram 
-void clear_datagram(Datagram* datagram){
-
-}
-
 int stringCmpi(char *s1, char *s2)
 {
     int i;
@@ -233,23 +229,19 @@ int stringCmpi(char *s1, char *s2)
     return 0;
 }
 
-
-void decrypt_string(char* dcstring, char* str, int length ){
+void decrypt_content(FILE *fp, char* str, int length ){
 
       int     i;
       char    ch;
 
-      for (i = 0; i < length; i++) { 
-        ch = str[i]; 
-        ch = Cipher(ch); 
-        if (ch == EOF){ 
-            return;
-        } 
-        else{
-            dcstring[i] = ch;
-        }
-      }
-
+      
+      for (i = 0; i<length; i++){ 
+    
+          // Input string into the file 
+          // single character at a time 
+          ch = Cipher(str[i]);
+          fputc(ch, fp); 
+     }
 }
 
 
@@ -313,7 +305,6 @@ int main(int argc, char *argv[]) {
   char                   **arguments = NULL;
   FILE*                    fp;
   int                      fd;
-  char                     decrypted_string[MAXFILE];
   short                    syn = 0x10;
   int                      client_port;
   struct sigaction         sa;
@@ -542,15 +533,6 @@ int main(int argc, char *argv[]) {
                                *  open a file with filename datagram.filename
                                */
 
-
-
-
-
-
-
-                              decrypt_string( decrypted_string, datagram_ptr->file, datagram_ptr->length_file );
-                              printf("Decrypted content: %s\n", decrypted_string );
-
                               printf("filename: %s\n", datagram_ptr->filename);
                           
 
@@ -564,10 +546,7 @@ int main(int argc, char *argv[]) {
                                   exit(-1);
                               }
 
-                              if ( fprintf( fp, "%s", decrypted_string ) < 0 ){
-                                  perror ( " fprintf error " );
-                                  exit(-1);
-                              }
+                              decrypt_content(fp, datagram_ptr->file, datagram_ptr->length_file);
                               fflush(fp);
 
                               printf("Success on download file %s\n", datagram_ptr->filename );
