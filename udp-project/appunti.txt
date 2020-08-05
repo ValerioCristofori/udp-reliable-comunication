@@ -1,2 +1,3 @@
-2- gestire meglio i segnali di sigpipe e sigint e sigkill ...
+2- inserire timer nel client di 1 minuto dopo il quale si chiude la connessione.
 0- rendere dinamica la quantita' dei byte da inviare
+

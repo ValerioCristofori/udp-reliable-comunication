@@ -200,7 +200,7 @@ void handler_alarm_conn (int ign)  /* handler for SIGALRM */
     exit(0);
 }
 
-void handler_sigint() { 
+void handler_sig() { 
        
     int size;
 
@@ -381,11 +381,23 @@ int main(int argc, char *argv[]) {
 
   printf("Ricevuto nuovo socket con porta %d\n", ntohs(servaddr.sin_port) );
 
-  sa.sa_handler = handler_sigint;
+  sa.sa_handler = handler_sig;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_SIGINFO;
 
   if (sigaction(SIGINT, &sa, NULL) == -1) {
+      printf("sigaction error\n");
+      exit(-1); 
+  }
+  if (sigaction(SIGHUP, &sa, NULL) == -1) {
+      printf("sigaction error\n");
+      exit(-1); 
+  }
+  if (sigaction(SIGQUIT, &sa, NULL) == -1) {
+      printf("sigaction error\n");
+      exit(-1); 
+  }
+  if (sigaction(SIGTSTP, &sa, NULL) == -1) {
       printf("sigaction error\n");
       exit(-1); 
   }
@@ -417,7 +429,6 @@ int main(int argc, char *argv[]) {
 
           /* controllo se lo stdin è leggibile */
           if (FD_ISSET(fileno(stdin), &fds)) {   /*  controllo se lo stdin è nel set dei file descriptors */ 
-              ;
               
 
                

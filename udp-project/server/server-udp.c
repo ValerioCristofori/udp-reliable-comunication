@@ -230,7 +230,7 @@ void manage_error_signal(Datagram *datagram_ptr, int sockfd ){
           case 1:
           default:
                 
-                printf("The client finished through signal CTRL+C\nExiting from the thread child\n" );
+                printf("The client finished through signal\nExiting from the thread child\n" );
                 thread_death();
                 close(sockfd);
                 pthread_exit(NULL);
