@@ -122,11 +122,11 @@ int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
           fseek(fp, 0, SEEK_END);
           length = ftell(fp);
           fseek(fp, 0, SEEK_SET);
-          datagram_ptr->length_file = length + 1;
+          datagram_ptr->length_file = length;
 
           rewind(fp);
 
-          for ( i = 0; i < length + 1; i++) {  // +1 for the '/0' char
+          for ( i = 0; i < length; i++) {  // +1 for the '/0' char
 
               ch = fgetc(fp);  
               ch2 = Cipher(ch); 
@@ -160,7 +160,7 @@ int datagram_setup_list( Datagram* datagram_ptr){
           length = ftell(fp);
           fseek(fp, 0, SEEK_SET);
 
-          datagram_ptr->length_file = length + 1;
+          datagram_ptr->length_file = length;
 
           rewind(fp);
 
@@ -168,7 +168,6 @@ int datagram_setup_list( Datagram* datagram_ptr){
               ch = fgetc(fp);  
               datagram_ptr->file[i] = ch; 
           }
-          datagram_ptr->file[i] = EOF;
           printf("File dimension %d\n", datagram_ptr->length_file);
           datagram_ptr->datagram_size = sizeof(*datagram_ptr);
           return datagram_ptr->datagram_size;
