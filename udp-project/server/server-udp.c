@@ -60,8 +60,6 @@ void print_datagram( Datagram *datagram_ptr){
 
       printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
       printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
-      printf("Filename size: %d, sizeof(): %ld\n", datagram_ptr->length_filename , sizeof(datagram_ptr->length_filename));
-      printf("Datagram size: %d, sizeof(): %ld\n", datagram_ptr->datagram_size, sizeof(datagram_ptr->datagram_size) );
       printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );
       printf("File content: %s, sizeof(): %ld\n", datagram_ptr->file, sizeof(datagram_ptr->file) );
       printf("Error message: %s, sizeof(): %ld\n", datagram_ptr->error_message, sizeof(datagram_ptr->error_message) );
@@ -135,8 +133,8 @@ int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
  
           datagram_ptr->file[i] = EOF;
           printf("File dimension %d\n", datagram_ptr->length_file);
-          datagram_ptr->datagram_size = sizeof(*datagram_ptr);
-          return datagram_ptr->datagram_size;
+  
+          return sizeof(*datagram_ptr);
 }
 
 
@@ -169,8 +167,8 @@ int datagram_setup_list( Datagram* datagram_ptr){
               datagram_ptr->file[i] = ch; 
           }
           printf("File dimension %d\n", datagram_ptr->length_file);
-          datagram_ptr->datagram_size = sizeof(*datagram_ptr);
-          return datagram_ptr->datagram_size;
+          
+          return sizeof(*datagram_ptr);
 
     
 
@@ -181,12 +179,11 @@ int datagram_setup_error( Datagram *datagram_ptr, int error ){
       // setupping the struct 
       datagram_ptr->length_file = 0;
       datagram_ptr->err = error;
-      datagram_ptr->datagram_size = sizeof(*datagram_ptr);
 
       print_datagram(datagram_ptr);
 
 
-      return datagram_ptr->datagram_size;
+      return sizeof(*datagram_ptr);
 }
 
 
@@ -304,7 +301,6 @@ void *client_request( void *sockfd ){
   char                    path_file[40];
   char                    command[FILENAME_LENGTH + 16];
   char                    path[MAXLINE];
-  char                    *filename;
   char                    *dirs;
   short                   syn;
   
@@ -377,17 +373,15 @@ void *client_request( void *sockfd ){
                         
 
                         printf("put\n" );
-                        filename = malloc((datagram_ptr->length_filename + 1)*sizeof(char));
-                        strncpy(filename, datagram_ptr->filename ,datagram_ptr->length_filename);
-                        sprintf(path_file, "root/%s", filename);
+                        sprintf(path_file, "root/%s", datagram_ptr->filename);
 
-                        if( strchr(filename, '/') != NULL){  //check if the program have to make some dirs
+                        if( strchr(datagram_ptr->filename, '/') != NULL){  //check if the program have to make some dirs
 
                               //take the name of all the dirs
                               //deleting the last chars until '/'
                               printf("Build directories\n");
-                              dirs = malloc( sizeof(filename) );
-                              build_directories(filename, dirs);
+                              dirs = malloc( sizeof(datagram_ptr->filename) );
+                              build_directories(datagram_ptr->filename, dirs);
 
                               //run the shell script for making directory/ies
                               sprintf(command, "./make_dirs.sh %s", dirs);
@@ -416,11 +410,11 @@ void *client_request( void *sockfd ){
 
                         fflush(fp);
 
-                        printf("Success on download file %s\n", filename );
+                        printf("Success on download file %s\n", datagram_ptr->filename );
 
 
                         free(datagram_ptr);
-                        free(filename);
+                        
 
 
 
@@ -438,12 +432,9 @@ void *client_request( void *sockfd ){
                         /*  --------------------------------------------------------------------------------
                          *  cambiare il path del file ---------> trovare il file nell'albero e aggiungere dir padri
                          */
-                        printf("%d\n", datagram_ptr->length_filename );
-                        filename = malloc((datagram_ptr->length_filename + 1)*sizeof(char));
-                        strncpy(filename, datagram_ptr->filename ,datagram_ptr->length_filename);
 
                         //controllo che il file sia presente nell'albero delle directories se si faccio il setup del datagram
-                        ret = filename_to_path(filename, path);
+                        ret = filename_to_path(datagram_ptr->filename, path);
                         if( ret == 1 ){
                             printf("send error message to the client\n");
                             size = datagram_setup_error( datagram_ptr, 3 );
@@ -478,7 +469,7 @@ void *client_request( void *sockfd ){
 
 
                         free(datagram_ptr);
-                        free(filename);
+                      
 
 
 
@@ -506,7 +497,7 @@ void *client_request( void *sockfd ){
 
 
                         printf("Start sender\n");
-                        start_sender(datagram_ptr, datagram_ptr->datagram_size, sock_data, &clientaddr, whoami);
+                        start_sender(datagram_ptr, size, sock_data, &clientaddr, whoami);
 
                         free(datagram_ptr);
 

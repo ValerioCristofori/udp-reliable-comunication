@@ -29,7 +29,7 @@
 #define MAXLINE           1024
 #define THRESHOLD         3
 
-#define cipherKey         'S'
+#define KEY         'Y'
 
 
 char *gets(char *s);
@@ -44,8 +44,6 @@ void print_datagram( Datagram *datagram_ptr){
 
       printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
       printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
-      printf("Filename size: %d, sizeof(): %ld\n", datagram_ptr->length_filename , sizeof(datagram_ptr->length_filename));
-      printf("Datagram size: %d, sizeof(): %ld\n", datagram_ptr->datagram_size, sizeof(datagram_ptr->datagram_size) );
       printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );
       printf("File content: %s, sizeof(): %ld\n", datagram_ptr->file, sizeof(datagram_ptr->file) );
       printf("Error message: %s, sizeof(): %ld\n", datagram_ptr->error_message, sizeof(datagram_ptr->error_message) );
@@ -70,7 +68,7 @@ void print_file( char *file, int length ){
 // function to encrypt/decrypt 
 char Cipher(char ch) 
 { 
-    return ch ^ cipherKey; 
+    return ch ^ KEY; 
 }
 
 int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
@@ -83,8 +81,6 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
         strcpy( datagram_ptr->command, arguments[0] );
 
         strcpy( datagram_ptr->filename, arguments[1] );
-
-        datagram_ptr->length_filename = strlen(arguments[1]);
 
         // build the attr datagram->file with the file stream
         fseek(fp, 0, SEEK_END);
@@ -111,11 +107,11 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
 
         datagram_ptr->file[i] = EOF;
         printf("File dimension %d\n", datagram_ptr->length_file);
-        datagram_ptr->datagram_size = sizeof(*datagram_ptr);
-        printf("Datagram dimension %d\n", datagram_ptr->datagram_size );
+        
 
         print_datagram(datagram_ptr);
-        return datagram_ptr->datagram_size;
+
+        return sizeof(*datagram_ptr);
 
 }
 
@@ -128,15 +124,13 @@ int datagram_setup_get( Datagram* datagram_ptr, char** arguments ){
         
         strcpy( datagram_ptr->filename, arguments[1] );
 
-        datagram_ptr->length_filename = strlen(arguments[1]);
-        printf("Length filename: %d\n", datagram_ptr->length_filename );
         datagram_ptr->length_file = 0;
 
-        datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+        
 
         print_datagram(datagram_ptr);
         
-        return datagram_ptr->datagram_size;
+        return sizeof(*datagram_ptr);
         
 
 } 
@@ -147,12 +141,11 @@ int datagram_setup_list( Datagram* datagram_ptr, char** arguments ){
         strcpy( datagram_ptr->command, arguments[0] );
 
         datagram_ptr->length_file = 0;
-        datagram_ptr->datagram_size = sizeof(*datagram_ptr);
 
         print_datagram(datagram_ptr);
 
 
-        return datagram_ptr->datagram_size;
+        return sizeof(*datagram_ptr);
  
         
 
@@ -165,12 +158,11 @@ int datagram_setup_exit( Datagram* datagram_ptr, char** arguments ){
         strcpy( datagram_ptr->command, arguments[0] );
 
         datagram_ptr->length_file = 0;
-        datagram_ptr->datagram_size = sizeof(*datagram_ptr);
 
         print_datagram(datagram_ptr);
 
 
-        return datagram_ptr->datagram_size;
+        return sizeof(*datagram_ptr);
  
         
 
@@ -182,12 +174,12 @@ int datagram_setup_exit_signal( Datagram* datagram_ptr){
         // setupping the struct 
         datagram_ptr->length_file = 0;
         datagram_ptr->err = 1;
-        datagram_ptr->datagram_size = sizeof(*datagram_ptr);
+        
 
         print_datagram(datagram_ptr);
 
 
-        return datagram_ptr->datagram_size;
+        return sizeof(*datagram_ptr);
  
         
 
@@ -200,7 +192,7 @@ void handler_alarm_conn (int ign)  /* handler for SIGALRM */
     exit(0);
 }
 
-void handler_sig() { 
+void handler_sigint() { 
        
     int size;
 
@@ -381,23 +373,11 @@ int main(int argc, char *argv[]) {
 
   printf("Ricevuto nuovo socket con porta %d\n", ntohs(servaddr.sin_port) );
 
-  sa.sa_handler = handler_sig;
+  sa.sa_handler = handler_sigint;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_SIGINFO;
 
   if (sigaction(SIGINT, &sa, NULL) == -1) {
-      printf("sigaction error\n");
-      exit(-1); 
-  }
-  if (sigaction(SIGHUP, &sa, NULL) == -1) {
-      printf("sigaction error\n");
-      exit(-1); 
-  }
-  if (sigaction(SIGQUIT, &sa, NULL) == -1) {
-      printf("sigaction error\n");
-      exit(-1); 
-  }
-  if (sigaction(SIGTSTP, &sa, NULL) == -1) {
       printf("sigaction error\n");
       exit(-1); 
   }
@@ -429,6 +409,7 @@ int main(int argc, char *argv[]) {
 
           /* controllo se lo stdin è leggibile */
           if (FD_ISSET(fileno(stdin), &fds)) {   /*  controllo se lo stdin è nel set dei file descriptors */ 
+              ;
               
 
                
@@ -450,7 +431,7 @@ int main(int argc, char *argv[]) {
               
 
               //malloc datagram and clear
-              datagram_ptr = malloc( sizeof(*datagram_ptr) );
+              datagram_ptr = malloc( sizeof(*datagram_ptr ));
               memset( datagram_ptr, 0, sizeof(*datagram_ptr));
 
 
@@ -602,13 +583,7 @@ int main(int argc, char *argv[]) {
 
                               printf("List of the files: %s\n", datagram_ptr->file );
                               
-                              // printf("lunghezza %d\n", datagram_ptr->length_file );
-                              // print_file(datagram_ptr->file, datagram_ptr->length_file);
-                              // attenzione all'EOF quando viene printato , non bello da vedere ------------------------------------
-
-
-
-
+                       
                 
               }else if( strcmp(arguments[0], "exit") == 0 ){
 

@@ -2,6 +2,7 @@
 
 #define MAXFILE           4200
 #define FILENAME_LENGTH   32
+#define COMMAND_LENGTH    5
 #define ERROR_MESSAGE_LENGTH  32
 #define TIMEOUT			  3
 #define MAXTRIES          10
@@ -19,14 +20,12 @@
 /* datagram struct */
 typedef struct datagram_value {
       
-      char command[5];
+      char command[COMMAND_LENGTH];
       char filename[FILENAME_LENGTH];
-      int  length_filename;
-      int  datagram_size;
-      int  length_file;
-      char file[MAXFILE];  
       char error_message[ERROR_MESSAGE_LENGTH];
       int  err;
+      int  length_file;
+      char file[MAXFILE];  
 
 } Datagram;
 
