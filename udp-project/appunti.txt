@@ -1,2 +1,0 @@
-0- rendere dinamica la quantita' dei byte da inviare
-

@@ -29,7 +29,7 @@
 #define MAXLINE           1024
 #define THRESHOLD         3
 
-#define KEY         'Y'
+#define KEY         'S'
 
 
 char *gets(char *s);
@@ -79,8 +79,10 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
 
         // setupping the struct 
         strcpy( datagram_ptr->command, arguments[0] );
+        printf("command length: %ld\n", sizeof(datagram_ptr->command) );
 
         strcpy( datagram_ptr->filename, arguments[1] );
+        datagram_ptr->err = 0;
 
         // build the attr datagram->file with the file stream
         fseek(fp, 0, SEEK_END);
@@ -111,7 +113,7 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
 
         print_datagram(datagram_ptr);
 
-        return sizeof(*datagram_ptr);
+        return LENGTH_HEADER + datagram_ptr->length_file;
 
 }
 
@@ -124,13 +126,16 @@ int datagram_setup_get( Datagram* datagram_ptr, char** arguments ){
         
         strcpy( datagram_ptr->filename, arguments[1] );
 
+        datagram_ptr->err = 0;
+
+
         datagram_ptr->length_file = 0;
 
         
 
         print_datagram(datagram_ptr);
         
-        return sizeof(*datagram_ptr);
+        return LENGTH_HEADER + datagram_ptr->length_file;
         
 
 } 
@@ -139,13 +144,14 @@ int datagram_setup_list( Datagram* datagram_ptr, char** arguments ){
 
         // setupping the struct 
         strcpy( datagram_ptr->command, arguments[0] );
+        datagram_ptr->err = 0;
 
         datagram_ptr->length_file = 0;
 
         print_datagram(datagram_ptr);
 
 
-        return sizeof(*datagram_ptr);
+        return LENGTH_HEADER + datagram_ptr->length_file;
  
         
 
@@ -156,13 +162,14 @@ int datagram_setup_exit( Datagram* datagram_ptr, char** arguments ){
 
         // setupping the struct 
         strcpy( datagram_ptr->command, arguments[0] );
+        datagram_ptr->err = 0;
 
         datagram_ptr->length_file = 0;
 
         print_datagram(datagram_ptr);
 
 
-        return sizeof(*datagram_ptr);
+        return LENGTH_HEADER + datagram_ptr->length_file;
  
         
 
@@ -179,7 +186,7 @@ int datagram_setup_exit_signal( Datagram* datagram_ptr){
         print_datagram(datagram_ptr);
 
 
-        return sizeof(*datagram_ptr);
+        return LENGTH_HEADER + datagram_ptr->length_file;
  
         
 
@@ -296,6 +303,8 @@ int main(int argc, char *argv[]) {
   socklen_t                len;
   char                   **arguments = NULL;
   FILE*                    fp;
+  char                    *dirs;
+  char                     command[FILENAME_LENGTH + 16];
   int                      fd;
   short                    syn = 0x10;
   int                      client_port;
@@ -516,14 +525,27 @@ int main(int argc, char *argv[]) {
 
                               //datagram ricevuto
                               printf("Datagram ricevuto (comando get)\n");
-
-                              //controllo che non ci siano stati errori
-                              
                                                           
                               /*
                                *  Parsing the datagram and
-                               *  open a file with filename datagram.filename
+                               *  open a file with filename datagram->filename
                                */
+
+                              if( strchr(datagram_ptr->filename, '/') != NULL){  //check if the program have to make some dirs
+
+                                    //take the name of all the dirs
+                                    //deleting the last chars until '/'
+                                    printf("Build directories\n");
+                                    dirs = malloc( sizeof(datagram_ptr->filename) );
+                                    build_directories(datagram_ptr->filename, dirs);
+
+                                    //run the shell script for making directory/ies
+                                    sprintf(command, "./make_dirs.sh %s", dirs);
+                                    system(command);
+
+
+                            
+                              }
 
                               printf("filename: %s\n", datagram_ptr->filename);
                           

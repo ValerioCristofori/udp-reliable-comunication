@@ -86,6 +86,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 			if( state_send->send_base == state_send->next_seq_no ){
 				
 				start_timer();
+				printf("Created timer\n");
 			}
 
 			state_send->next_seq_no++;
@@ -100,9 +101,12 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
-	Packet ack;
+	Packet ack;	
 	int    byte_response;
 	socklen_t    len;
+
+	// init -1 for manage case: lost first packet
+	ack.seq_no = -1*(state_send->window);
 
 	len = sizeof(*addr_ptr);
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
@@ -150,7 +154,6 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 			else{ // not all packet acked
 				printf("Restart TO\n");
 				alarm(TIMEOUT); /* reset alarm */
-				state_send->tries = 0;
 			}
 
 	}

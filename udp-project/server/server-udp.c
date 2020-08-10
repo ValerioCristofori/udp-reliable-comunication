@@ -28,7 +28,7 @@
 #include "defines.h"
 
 #define SERV_PORT          2222
-#define cipherKey          'S'
+#define KEY          'S'
 
 
 int                        numthreads = 0;
@@ -52,7 +52,7 @@ int stringCmpi(char *s1,char *s2)
 // function to encrypt/decrypt
 char Cipher(char ch) 
 { 
-    return ch ^ cipherKey; 
+    return ch ^ KEY; 
 }
 
 
@@ -133,8 +133,10 @@ int datagram_setup_get( Datagram* datagram_ptr, char* filename ){
  
           datagram_ptr->file[i] = EOF;
           printf("File dimension %d\n", datagram_ptr->length_file);
+
+
   
-          return sizeof(*datagram_ptr);
+          return LENGTH_HEADER + datagram_ptr->length_file;
 }
 
 
@@ -168,7 +170,7 @@ int datagram_setup_list( Datagram* datagram_ptr){
           }
           printf("File dimension %d\n", datagram_ptr->length_file);
           
-          return sizeof(*datagram_ptr);
+          return LENGTH_HEADER + datagram_ptr->length_file;
 
     
 
@@ -183,7 +185,7 @@ int datagram_setup_error( Datagram *datagram_ptr, int error ){
       print_datagram(datagram_ptr);
 
 
-      return sizeof(*datagram_ptr);
+      return LENGTH_HEADER + datagram_ptr->length_file;
 }
 
 
@@ -243,48 +245,9 @@ int generate_random_num_port(){
   int lower = 2224;
   int upper = 5000;
 
-  srand( (unsigned int)time(NULL) ); //special seeds; only one for process
-
   return ( rand() % ( upper - lower + 1 ) + lower );
 
 }
-
-
-
-void build_directories( char *path, char *dirs ){
-
-      char ch;
-      int count = 0, i = 0;    //number of '/'
-
-      ch = path[0];
-
-      while( ch != '\0' ){
-
-          if( ch == '/' ) count++;
-          ch = path[i++];
-
-      } 
-
-      
-      i = 0;
-      while( count ){
-
-          ch = path[i];
-          if( ch == '/' ) count--;
-          
-          dirs[i] = ch;
-          i++;
-
-      }
-      dirs[i++] = '\0';
-
-
-      printf("%s\n", dirs );
-
-
-
-}
-
 
 
 
@@ -324,10 +287,23 @@ void *client_request( void *sockfd ){
         } 
         printf("Syn received: %u\n", syn );
 
+    retry_num_port:
+
         client_port = generate_random_num_port();
         printf("%d\n", client_port );
 
-        //try to send the new port number to the client
+        // create the udp socket 
+        sock_data = udp_socket_init_server( &clientaddr, NULL, client_port, 0 );
+        if( sock_data == -1 ){
+            thread_death();
+            perror("socket init error");
+            pthread_exit( NULL );
+        }else if( sock_data == 0 ){
+            printf("Try to use a port already used\n");
+            goto retry_num_port;
+        }
+
+        //send the new port number to the client
         tmp = htonl(client_port);
         n = sendto( sock ,  &tmp,  sizeof(tmp) , 0 ,
                     ( struct sockaddr *)&relation , sizeof( relation ));
@@ -335,16 +311,6 @@ void *client_request( void *sockfd ){
             perror ( " sendto error " );
             thread_death();
             pthread_exit(NULL);
-        }
-
-
-
-        // create the udp socket 
-        sock_data = udp_socket_init_server( &clientaddr, NULL, client_port );
-        if( sock_data == -1 ){
-            thread_death();
-            perror("socket init error");
-            pthread_exit( NULL );
         }
 
         
@@ -548,7 +514,7 @@ int main(int argc, char *argv[]) {
       /* setting the address */
       memset((void *)&servaddr, 0, sizeof(servaddr));
       // create the udp socket 
-      sockfd = udp_socket_init_server( &servaddr, NULL, SERV_PORT );
+      sockfd = udp_socket_init_server( &servaddr, NULL, SERV_PORT, 1 );
       if( sockfd == -1 ){
         perror("socket server init error");
         exit(-1);

@@ -1,8 +1,9 @@
 #pragma once
 
-#define MAXFILE           4200
+#define MAXFILE           16777216       // 2^24 bytes ----- 16 MB
 #define FILENAME_LENGTH   32
 #define COMMAND_LENGTH    5
+#define LENGTH_HEADER     85
 #define ERROR_MESSAGE_LENGTH  32
 #define TIMEOUT			  3
 #define MAXTRIES          10
@@ -54,13 +55,13 @@ typedef struct gobackn_packet{
 /* utils functions */
 extern ssize_t FullWrite ( int fd , const void * buf , size_t count );
 
-extern int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port );
+extern int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port, int option );
 
 extern int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port );
 
 extern char** str_split(char* a_str, const char a_delim);
 
-extern int split( char *str, char c, char ***arr );
+extern void build_directories( char *path, char *dirs );
 
 extern void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in* addr_ptr );
 

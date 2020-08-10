@@ -92,7 +92,7 @@ void handler_alarm (int ign)	/* handler for SIGALRM */
 }
 
 
-int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
+int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami, pthread_t *th ){
 
 
 		int tmp_length, n;
@@ -124,6 +124,16 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 		    	exit(1);
 		    }
 
+		    if( s->send_base == s->next_seq_no ){
+				
+				if( *th != 0 ){
+					printf("kill %ld\n", *th );
+					pthread_cancel(*th);
+				}
+				pthread_create(th, NULL, start_timer_thread, (void*)whoami );
+				printf("Created timer\n");
+			}
+
 			s->next_seq_no++;
 			s->packet_sent++;
 
@@ -140,6 +150,7 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 	int    byte_response;
 	socklen_t    len;
 
+	ack.seq_no = -1*(s->window);
 
 	len = sizeof(*addr_ptr);
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
@@ -176,6 +187,7 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 			s->window_ack = s->ack_no + 1;
 			s->send_base = (s->ack_no + 1);
 			printf ("received ack %d\n", s->ack_no);
+
 			if( s->send_base == s->next_seq_no ){
 				s->window_ack--;
 				clear_thread(th);
@@ -191,7 +203,7 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 				}
 				pthread_create(th, NULL, start_timer_thread, (void*)whoami );
 				printf("Created timer\n");
-				s->tries = 0;
+				
 			}
 
 	}
@@ -203,7 +215,7 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 }
 
 
-//
+
 void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in * addr_ptr, pthread_t whoami ){
 
 	struct sigaction act;
@@ -253,7 +265,7 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	do{
 		if( s->byte_reads >= PACKET_SIZE )
-			s->byte_reads = reliable_send_datagram( s, buffer, size, sockfd, addr_ptr, whoami );
+			s->byte_reads = reliable_send_datagram( s, buffer, size, sockfd, addr_ptr, whoami, th );
 		
 
 		reliable_receive_ack( s, sockfd, addr_ptr, whoami, th );
