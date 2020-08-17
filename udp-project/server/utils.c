@@ -16,53 +16,29 @@
 
 
 
-ssize_t FullWrite ( int fd , const void * buf , size_t count ){
-
-	size_t nleft;
-	size_t nwritten;
-
-	nleft = count;
-	while( nleft < 0 ){
-		
-		if( (nwritten = write( fd, buf, nleft ) ) < 0){
-			if ( errno == EINTR ){
-				continue;
-			}else{
-				return nwritten;
-			}
-		}
-
-		nleft -= nwritten;
-		buf += nwritten;
-	}
-	return nleft;
-}
-
-
 int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port ){
 
 	/*
-	 *	On success return socket file desriptor
+	 *	On success return socket file descriptor
 	 *  else -1
 	 */
 
 	int sockfd;
-	int option = 1;
+	int option = 1; // option to set SO REUSEADDR
 
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { 	/* create UDP socket */
 	    perror("errore in socket");
 	    return -1;
     }
 
-    addr->sin_family = AF_INET; /* tipo di socket */
-	addr->sin_port = htons(num_port); /* numero di porta del server */
+    addr->sin_family = AF_INET; /* type socket family */
+	addr->sin_port = htons(num_port); /* set port number */
 
-    /* permette di eseguire bind su indirizzi locali che sono gia in uso da altri socket */
+    /* allow to bind on local used address */
 	setsockopt(sockfd ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
 
 	
 	//socket of a client app
-	/* assegna l'indirizzo del server . L'indirizzo e una stringa da convertire in intero secondo network byte order. */
 	if (inet_pton(AF_INET, address, &(addr->sin_addr) ) <= 0) {
 	    fprintf(stderr, "errore in inet_pton per %s", address);
 		return -1;
@@ -77,8 +53,9 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
 int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port, int option ){
 
 	/*
-	 *	On success return socket file desriptor
-	 *  else -1
+	 *	On success return socket file descriptor
+	 *  If bind return an errno EADDRINUSE -> return 0 to allow the exception manage in the server
+	 * 	else -1
 	 */
 
 	int sockfd;
@@ -88,21 +65,21 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 	    return -1;
     }
 
-    addr->sin_family = AF_INET; /* tipo di socket */
-	addr->sin_port = htons(num_port); /* numero di porta del server */
+    addr->sin_family = AF_INET; /* type socket family */
+	addr->sin_port = htons(num_port); /* set port number */
 
     if(option){
-        /* permette di eseguire bind su indirizzi locali che sono gia in uso da altri socket */
+		/* allow to bind on local used address */
     	setsockopt(sockfd ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
     }
 	if( address != NULL ){	
-		addr->sin_addr.s_addr = inet_addr(address); /* il socket accetta pacchetti da l'indirizzo address */
+		addr->sin_addr.s_addr = inet_addr(address); /* socket accept packet from 'address' only */
 	}else{
-		addr->sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle sue interfacce di rete */
+		addr->sin_addr.s_addr = htonl(INADDR_ANY); /* socket accept packet from every location */
 	}
 
 
-	/* assegna l'indirizzo al socket */
+	/* assign address */
 	if (bind(sockfd, (struct sockaddr *)addr, sizeof(*addr)) < 0) {
 	    perror("errore in bind");
 	    if( errno == EADDRINUSE ){
@@ -118,6 +95,11 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 
 void build_directories( char *path, char *dirs ){
 
+	  /*
+	   * This procedure set 'dirs' the entire 
+	   * directories path until the file location
+	   */
+	  
       char ch;
       int count = 0, i = 0;    //number of '/'
 
@@ -147,6 +129,15 @@ void build_directories( char *path, char *dirs ){
 
 
 char** str_split(char* a_str, const char a_delim){
+    
+    /*
+     * Return the char** contains 
+     * the tokens of strings passed 
+     * in a_str delimited by ' '
+     * 
+     * Used to parse the input of: command  {filename}
+     */
+    
     char** result    = 0;
     size_t count     = 0;
     char* tmp        = a_str;

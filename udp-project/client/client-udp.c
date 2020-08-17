@@ -26,10 +26,8 @@
 #include "defines.h"
 
 #define SERV_PORT         2222
-#define MAXLINE           1024
 #define THRESHOLD         3
-
-#define KEY         'S'
+#define KEY               'S'
 
 
 char *gets(char *s);
@@ -51,7 +49,12 @@ void print_datagram( Datagram *datagram_ptr){
 }
 
 void print_file( char *file, int length ){
-
+	
+  /*
+   *  Print the content of the 'file'
+   *  Used to print the list of the files
+   */
+	
   char ch;
 
   for (int i = 0; i < length; i++) { 
@@ -65,13 +68,22 @@ void print_file( char *file, int length ){
   printf("\n");
 }
 
-// function to encrypt/decrypt 
 char Cipher(char ch) 
 { 
-    return ch ^ KEY; 
+	/*
+	 * Return the encrypt or decrypt char matches with 'ch'
+	 */
+    return ch ^ KEY;  // the operator '^' make the XOR betw ch and KEY
+					  // KEY must be a char 
 }
 
 int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
+        
+       /*
+		* Return -1 if file is not supported 
+		* its length is greater than MAXFILE
+		* Else return the lenght of the datagram to send  
+		*/
         
         int length, i;
         char ch, ch2;
@@ -84,9 +96,9 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
         strcpy( datagram_ptr->filename, arguments[1] );
         datagram_ptr->err = 0;
 
-        // build the attr datagram->file with the file stream
+        // build file of the datagram with file stream
         fseek(fp, 0, SEEK_END);
-        length = ftell(fp);
+        length = ftell(fp);  //count the file length
         fseek(fp, 0, SEEK_SET);
 	
       	if( length >= MAXFILE ){
@@ -94,20 +106,19 @@ int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
             return -1;
       	}	
         
-        printf("%d\n", length );
-
         datagram_ptr->length_file = length;
 
-        rewind(fp);
+        rewind(fp);  //rewind the file pointer to the start position
 
-        for ( i = 0; i < length; i++) {  // +1 for the '/0' char
+		//encrypt all char one by one and set in the datagram->file
+        for ( i = 0; i < length; i++) {  
 
             ch = fgetc(fp); 
             ch2 = Cipher(ch); 
             datagram_ptr->file[i] = ch2; 
         }
 
-        datagram_ptr->file[i] = EOF;
+        datagram_ptr->file[i] = EOF;  //add the end of file byte
         printf("File dimension %d\n", datagram_ptr->length_file);
         
 
@@ -122,13 +133,9 @@ int datagram_setup_get( Datagram* datagram_ptr, char** arguments ){
 
 
         // setupping the struct 
-        strcpy( datagram_ptr->command, arguments[0] );
-        
-        strcpy( datagram_ptr->filename, arguments[1] );
-
-        datagram_ptr->err = 0;
-
-
+        strcpy( datagram_ptr->command, arguments[0] );  //set command string
+        strcpy( datagram_ptr->filename, arguments[1] ); //set filename to get
+        datagram_ptr->err = 0;		//no error
         datagram_ptr->length_file = 0;
 
         
@@ -143,7 +150,7 @@ int datagram_setup_get( Datagram* datagram_ptr, char** arguments ){
 int datagram_setup_list( Datagram* datagram_ptr, char** arguments ){ 
 
         // setupping the struct 
-        strcpy( datagram_ptr->command, arguments[0] );
+        strcpy( datagram_ptr->command, arguments[0] );  //set command string
         datagram_ptr->err = 0;
 
         datagram_ptr->length_file = 0;
@@ -180,7 +187,8 @@ int datagram_setup_exit_signal( Datagram* datagram_ptr){
 
         // setupping the struct 
         datagram_ptr->length_file = 0;
-        datagram_ptr->err = 1;
+        datagram_ptr->err = 1;  //set error flag to 1 
+								//exiting by signal
         
 
         print_datagram(datagram_ptr);
@@ -195,6 +203,9 @@ int datagram_setup_exit_signal( Datagram* datagram_ptr){
 
 void handler_alarm_conn (int ign)  /* handler for SIGALRM */
 {
+	/*
+	 * Exit from the client --> server not running
+	 */
     printf("Error with the connection: server doesn't respond\n");
     exit(0);
 }
@@ -203,8 +214,8 @@ void handler_sigint() {
        
     int size;
 
-        //inviare exit al server 
-        //settando a 1 il campo err della struct datagram
+        //send exit to server 
+        //setting err to 1 in datagram
         //malloc datagram and clear
         datagram_ptr = malloc( sizeof(*datagram_ptr) );
         memset( datagram_ptr, 0, sizeof(*datagram_ptr));
@@ -245,6 +256,12 @@ void decrypt_content(FILE *fp, char* str, int length ){
 
 
 void path_to_filename( char *path , char *filename ){
+	
+	  /*
+	   * Setup the char pointer 'filename' the name of the file
+	   * parsing the path through strstr
+	   */
+
 
       int l=0;
       char* ssc;
@@ -261,6 +278,12 @@ void path_to_filename( char *path , char *filename ){
 
 
 void manage_error(Datagram *datagram_ptr, int sockfd ){
+      
+      /*
+       *  Handler for the error messages
+       *  through error code and the cases
+       *  define in the file defines.h
+       */
       
       switch(datagram_ptr->err){
 
@@ -283,7 +306,7 @@ void manage_error(Datagram *datagram_ptr, int sockfd ){
           case 5:
 
                 printf("%s\n", ERROR_TOO_MANY_MATCHES );
-			break;
+				break;
 
 
       }
@@ -317,7 +340,7 @@ int main(int argc, char *argv[]) {
 
 
   if (argc != 2) { /* controlla numero degli argomenti */
-    fprintf(stderr, "howtouse: ./client <indirizzo IP server>\n");
+    fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>\n");
     exit(1);
   }
 
@@ -334,10 +357,11 @@ int main(int argc, char *argv[]) {
       exit(0);
   }
 
-  alarm(THRESHOLD);
+  alarm(THRESHOLD); //alarm signal if server dont respond
+					//until threshold sec 
 
   
-  memset((void *)&servaddr, 0, sizeof(servaddr));      /* azzera servaddr */
+  memset((void *)&servaddr, 0, sizeof(servaddr));      /* set 0 servaddr struct */
   
   sockfd = udp_socket_init_client( &servaddr, argv[1], SERV_PORT );
   if( sockfd == -1 ){
@@ -350,7 +374,7 @@ int main(int argc, char *argv[]) {
   printf("Connection to the server on address %s and port %d\n", argv[1], SERV_PORT );
 
 
-  FD_ZERO(&fds);  /* inizializza a 0 il set dei descrittori in lettura */
+  FD_ZERO(&fds);  /* Init with 0 all the entry of fds set */
 
   //send del pacchetto di syn per richiedere una porta
   printf("Syn sent\n");
@@ -362,17 +386,18 @@ int main(int argc, char *argv[]) {
     exit ( -1);
   }
   len = sizeof(servaddr);
+  //Wait the new port no 
   n = recvfrom( sockfd ,  &tmp,  sizeof(tmp),  0, (struct sockaddr *)&servaddr,  &len );
   if( n <= 0 ){
       perror( "recvfrom error" );
       exit(-1);
   }
-  client_port = ntohl(tmp);
+  client_port = ntohl(tmp); //setting the new port number for new socket 
   
-  alarm(0);
+  alarm(0);   // reset alarm --> good connection
 
   //change server port with the negotiate one
-  memset((void *)&servaddr, 0, sizeof(servaddr));      /* azzera servaddr */
+  memset((void *)&servaddr, 0, sizeof(servaddr));
   
   sockfd = udp_socket_init_client( &servaddr, argv[1], client_port );
   if( sockfd == -1 ){
@@ -380,8 +405,9 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  printf("Ricevuto nuovo socket con porta %d\n", ntohs(servaddr.sin_port) );
+  printf("New socket with %d port number\n", ntohs(servaddr.sin_port) );
 
+  //set the handler for sigint signal
   sa.sa_handler = handler_sigint;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_SIGINFO;
@@ -397,34 +423,26 @@ int main(int argc, char *argv[]) {
     //-----------------------   Client body
           printf("\nType something:\n");
 
-          /* uso fileno() per la conversione FILE* in int */
-          FD_SET( fileno(stdin), &fds );  /* aggiungo il descrittore dello std input */
-          FD_SET( sockfd, &fds );           /* aggiungo il descrittore del socket con il server */
+          /* use fileno() for conversion from FILE* to int */
+          FD_SET( fileno(stdin), &fds );  /* add stdin file descriptor */
+          FD_SET( sockfd, &fds );           /* add socket with server descriptor */
           
 
-          maxfd = (fileno(stdin) < sockfd) ? (sockfd + 1): (fileno(stdin) + 1);  /* maxfd il massimo fd + 1 */
+          maxfd = (fileno(stdin) < sockfd) ? (sockfd + 1): (fileno(stdin) + 1);  /* maxfd begin the max file descriptor + 1 */
 
-          if (select(maxfd, &fds, NULL, NULL, NULL) < 0 ) { /* attendo descrittore pronto in lettura */
+          if (select(maxfd, &fds, NULL, NULL, NULL) < 0 ) { /* wait a descriptor ready in reading */
                 perror("select error");
                 exit(1);
           }
 
-          /*
-           *  al ritorno dell a chiamata select servo il descrittore 
-           *  che ha causato l'uscita
-           */
+          /* Serve the descriptor that cause the exit from select call */
 
-          
-
-          /* controllo se lo stdin è leggibile */
-          if (FD_ISSET(fileno(stdin), &fds)) {   /*  controllo se lo stdin è nel set dei file descriptors */ 
-              ;
-              
-
+          /* check if stdin is readable */
+          if (FD_ISSET(fileno(stdin), &fds)) {   /*  check if stdin is in the set of fds */
                
               memset(&buff, 0, sizeof(buff));
 
-              if (fgets(buff, sizeof(buff), stdin) != NULL)
+              if (fgets(buff, sizeof(buff), stdin) != NULL)    // get the input from the command line
               {
                 if ((ptr = strchr(buff, '\n')) != NULL)
                   *ptr = '\0';
@@ -434,7 +452,7 @@ int main(int argc, char *argv[]) {
               arguments = str_split(buff, ' ');/* parsing the shell command */
      
               if( arguments == NULL ){
-                  printf("Wrong arguments\nTry to type:\n-put\n-get\n-list\n-exit\n");
+                  printf("\nWrong arguments\nTry to type:\nput <path/filename>\nget <path/filename>\nlist\nexit\n");
                   goto retry;
               }
               
@@ -479,24 +497,11 @@ int main(int argc, char *argv[]) {
                               }
 
                               printf("Start sender\n");
-                              start_sender(datagram_ptr, size, sockfd, &servaddr);
-
-
-
-                              //wait for the response
-                              //error or success message
-
-                              
-
-
-            
+                              start_sender(datagram_ptr, size, sockfd, &servaddr); /* Send the request to the server */
 
 
               }else if( strcmp(arguments[0], "get") == 0 ){
                 
-                
-
-
 
                               //------------------- get body --------------------------
 
@@ -510,20 +515,20 @@ int main(int argc, char *argv[]) {
                               size = datagram_setup_get( datagram_ptr,  arguments );
 
                               printf("Start sender\n");
-                              start_sender(datagram_ptr, size, sockfd, &servaddr);
+                              start_sender(datagram_ptr, size, sockfd, &servaddr); /* Send the request to the server */
 
                               //clear datagram
                               memset( datagram_ptr, 0, sizeof(*datagram_ptr));
 
                               printf("Start receiver\n");
-                              size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);
+                              size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1); /* Wait the response from the server */
                               if(size == -1){
                                     manage_error(datagram_ptr, sockfd);
                                     goto retry;
                               }
 
 
-                              //datagram ricevuto
+                              //datagram received
                               printf("Datagram ricevuto (comando get)\n");
                                                           
                               /*
@@ -586,7 +591,7 @@ int main(int argc, char *argv[]) {
                               size = datagram_setup_list( datagram_ptr,  arguments );
 
                               printf("Start sender\n");
-                              start_sender(datagram_ptr, size, sockfd, &servaddr);
+                              start_sender(datagram_ptr, size, sockfd, &servaddr);  /* Send the request to the server */
 
 
                               //clear datagram
@@ -594,7 +599,7 @@ int main(int argc, char *argv[]) {
                               //free(datagram_ptr);
 
                               printf("Start receiver\n");
-                              size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);
+                              size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);   /* Wait the response from the server */
                               if(size == -1){
                                     manage_error(datagram_ptr, sockfd);
                                     goto retry;
@@ -603,7 +608,7 @@ int main(int argc, char *argv[]) {
                               print_datagram(datagram_ptr);
 
 
-                              printf("List of the files: %s\n", datagram_ptr->file );
+                              printf("List of the files: %s\n", datagram_ptr->file );  //print the tree of the files
                               
                        
                 
@@ -615,9 +620,7 @@ int main(int argc, char *argv[]) {
                               size = datagram_setup_exit( datagram_ptr,  arguments );
 
                               printf("Start sender\n");
-                              start_sender(datagram_ptr, size, sockfd, &servaddr);
-
-
+                              start_sender(datagram_ptr, size, sockfd, &servaddr); /* Send exit message to the server */
 
                               free(datagram_ptr);
                               free(arguments);           
@@ -626,9 +629,8 @@ int main(int argc, char *argv[]) {
 
               }else{
                  
-                              printf("Wrong arguments\nTry to type:\n-put\n-get\n-list\n-exit\n");
-                              perror("error with the arguments passed\n");
-                              continue;
+                  printf("\nWrong arguments\nTry to type:\nput <path/filename>\nget <path/filename>\nlist\nexit\n");
+                  continue;
               }
               
             retry:
