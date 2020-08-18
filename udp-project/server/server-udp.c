@@ -246,7 +246,7 @@ int filename_to_path( char* filename, char* path ){
     char command[FILENAME_LENGTH + 16];
     char buffer[MAXLINE];
 
-    sprintf(command, "./search_dir.sh %s", filename);
+    sprintf(command, "./script-shell/search_dir.sh %s", filename);
     printf("%s is the command\n", command );
 
     p = popen(command, "r");  /* launching shell script and creating a pipe 
@@ -426,7 +426,7 @@ void *client_request( void *sockfd ){
                               build_directories(datagram_ptr->filename, dirs);
 
                               //run the shell script for making directory/ies
-                              sprintf(command, "./make_dirs.sh %s", dirs);
+                              sprintf(command, "./script-shell/make_dirs.sh %s", dirs);
                               system(command);
 
 
@@ -527,7 +527,7 @@ void *client_request( void *sockfd ){
                          * 	that contains the structure of th subdirectories of ./root/
                          */
                         printf("Lauch shell script\n");
-                        system("./build_tree.sh"); // launch shell script
+                        system("./script-shell/build_tree.sh"); // launch shell script
 
                         size = datagram_setup_list( datagram_ptr );
 

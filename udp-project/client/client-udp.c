@@ -545,7 +545,7 @@ int main(int argc, char *argv[]) {
                                     build_directories(datagram_ptr->filename, dirs);
 
                                     //run the shell script for making directory/ies
-                                    sprintf(command, "./make_dirs.sh %s", dirs);
+                                    sprintf(command, "./script-shell/make_dirs.sh %s", dirs);
                                     system(command);
 
 
