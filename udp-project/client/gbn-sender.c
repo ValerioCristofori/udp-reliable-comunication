@@ -9,36 +9,44 @@
 
 #include "defines.h"
 
-State* state_send;
-int ackno;
-int window_ack;
-int byte_reads;
+State  	*state_send;
+int 	 ackno;
+int 	 window_ack;
+int 	 byte_reads;
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
 {
-  printf("-------------------------- TIMEOUT -------------------------------\n");
-  state_send->next_seq_no = state_send->send_base;
-  state_send->packet_sent = state_send->send_base;
-  byte_reads = PACKET_SIZE;
-  state_send->tries += 1;
+	/*
+	 *  When the alarm expires 
+	 *  the client restart the sending going back to n
+	 *  where n is the send base ( oldest packet sent not acked yet )
+	 */
 
-}
 
-void start_timer(){
-		alarm(TIMEOUT);
+		  printf("-------------------------- TIMEOUT -------------------------------\n");
+		  state_send->next_seq_no = state_send->send_base;  //going back to n according to the protocol
+		  state_send->packet_sent = state_send->send_base;
+		  byte_reads = PACKET_SIZE;
+		  state_send->tries += 1;   //upgrade tries counter for interrupt critical cases
+
 }
 
 void init_state_sender(){
-	state_send->window = 5;
-	state_send->tries = 0;
-	state_send->send_base = 0;
-	state_send->packet_sent = 0;
-	state_send->next_seq_no = 0;
+	/*
+	 *  Init the struct State connection
+	 *  for the specific couple thread child - client
+	 */
+
+	state_send->window 			= 5;  //max packet in fly
+	state_send->tries 			= 0;  //init count tries
+	state_send->send_base 		= 0;
+	state_send->packet_sent 	= 0;
+	state_send->next_seq_no 	= 0;
 	state_send->expected_seq_no = 0;
-	byte_reads = PACKET_SIZE;
-	window_ack = 0;
-	ackno = -1;
+	byte_reads 					= PACKET_SIZE;  //init to PACKET SIZE for start reading 
+	window_ack 					= 0;
+	ackno 						= -1;  //init ack to -1 for the initial critical case
 }
 
 void print_state_sender(){
@@ -53,7 +61,14 @@ void print_state_sender(){
 int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr ){
 
 
-		int tmp_length, n;
+	/*
+	 *  Return the number of bytes sent to the sockaddr
+	 *  The buffer is divided in some packet of PACKETSIZE length 
+	 *   and is implemented the go back n protocol 
+	 *   for reliable data transfer
+	 */
+
+		int 	tmp_length, n;
 
 		tmp_length = PACKET_SIZE;
 
@@ -83,12 +98,13 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 		    }
 
 
-			if( state_send->send_base == state_send->next_seq_no ){
+			if( state_send->send_base == state_send->next_seq_no ){  // when start the timer according to gbn
 				
-				start_timer();
+				alarm(TIMEOUT);
 				printf("Created timer\n");
 			}
 
+			//update variables
 			state_send->next_seq_no++;
 			state_send->packet_sent++;
 
@@ -101,9 +117,14 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
-	Packet ack;	
-	int    byte_response;
-	socklen_t    len;
+	/*
+	 *  Return the number of the byte read from the socket in sockaddr
+	 *  This is implemented by the mechanism of acks
+	 */
+
+	Packet 			ack;	
+	int    			byte_response;
+	socklen_t    	len;
 
 	// init -1 for manage case: lost first packet
 	ack.seq_no = -1*(state_send->window);
@@ -112,9 +133,9 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
 			
 
-			if (errno == EINTR)	/* Alarm went off  */
+			if (errno == EINTR)	// alarm went off 
 	  		{
-	    		if (state_send->tries < MAXTRIES)	/* incremented by signal handler */
+	    		if (state_send->tries < MAXTRIES)	// incremented by alarm handler
 	      		{
 					printf ("timed out, %d more tries...\n", MAXTRIES - state_send->tries);
 					break;
@@ -144,7 +165,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 			state_send->send_base = (ackno + 1);
 			printf ("received ack %d\n", ackno);
 
-			if( state_send->send_base == state_send->next_seq_no ){
+			if( state_send->send_base == state_send->next_seq_no ){  //received the correct ack
 				window_ack--;
 				alarm (0); /* clear alarm */
 				state_send->tries = 0;
@@ -168,46 +189,57 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in * addr_ptr ){
 
-	struct sigaction act;
-	char *buffer;
-	printf("Datagram dimension %d\n", size );
-	int num_packet = (size/PACKET_SIZE) + 1;
-	printf("%d\n", num_packet );
+	/*
+	 *  Procedure to start the sending packets to sockaddr_in
+	 *  Implemented the go back n protocol for reliable data transfer
+	 *  Used the probability p to simulate the data loss and
+	 *  check the reliability.
+	 *  
+	 *  Used to send datagram struct that is copied to a buffer of bytes
+	 *  And segmented in packet of PACKETSIZE length
+	 *  
+	 */
+
+	struct sigaction 			act;
+	char 					   *buffer;
+	int 						num_packet = (size/PACKET_SIZE) + 1;
+	
 	printf("Number of packet to be send %d\n", num_packet);
 
-
-
 	printf("Build buffer of bytes\n");
-	//build the buffer in a separate function
+
+	//malloc and clear the buffer of bytes for sending
 	buffer = malloc(size);
 	memcpy(buffer, datagram, size);
-
-
-	printf("buffer %s\n", (char *)buffer );
-
+	//malloc the state of the sending
 	state_send = malloc(sizeof(*state_send));
+	
+
 	act.sa_handler = handler_alarm;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = SA_SIGINFO;
 
-    if (sigaction (SIGALRM, &act, NULL) < 0){
+    if (sigaction (SIGALRM, &act, NULL) < 0){ //add the handler for manage the TO
 		perror("sigaction() failed for SIGALRM");
 	    exit(0);
 	}
 
-
+	// init variables for the sending
 	init_state_sender();
 	print_state_sender();
 	do{
 		if(byte_reads >= PACKET_SIZE)
+			//try to send packets in pipelined
 			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr );
 
+		//wait ack
 		reliable_receive_ack( sockfd, addr_ptr );
 
 		print_state_sender();
 		printf("------ packet sent %d\n", state_send->packet_sent );
 	}
 	while( ackno != num_packet - 1 ); 
+	//all datagram sent
 
 	printf("Datagram sent with success\n");
 

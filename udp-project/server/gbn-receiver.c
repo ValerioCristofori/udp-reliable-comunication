@@ -118,8 +118,6 @@ int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_pt
 
 		printf("Bytes received %d\n", size );
 
-		//datagram = malloc( size*sizeof(char));
-
 		memcpy( datagram, buffer, size);
 
 		if( datagram->err ){  // there are some signal error

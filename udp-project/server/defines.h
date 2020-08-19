@@ -21,12 +21,12 @@
 /* datagram struct */
 typedef struct datagram_value {
       
-      char command[COMMAND_LENGTH];  				//specific operation: put, get, list, exit
-      char filename[FILENAME_LENGTH];				//name of the file in put and get cases
-      char error_message[ERROR_MESSAGE_LENGTH];		//type of error : case 1-5
-      int  err;										//flag for error
-      int  length_file;								//length data part
-      char file[MAXFILE];  							//data
+      	char command[COMMAND_LENGTH];  				//specific operation: put, get, list, exit
+      	char filename[FILENAME_LENGTH];				//name of the file in put and get cases
+      	char error_message[ERROR_MESSAGE_LENGTH];		//type of error : case 1-5
+      	int  err;										//flag for error
+      	int  length_file;								//length data part
+      	char file[MAXFILE];  							//data
 
 } Datagram;
 
@@ -34,15 +34,15 @@ typedef struct datagram_value {
 /* state of communication */
 typedef struct state_communication {
 
-	   int window;					//the dimension of the window(packets in fly)
-	   int tries;					//counter for the current tries
-	   int send_base;				//label of the last packet not yet acked
-	   int next_seq_no;				//label of next packet to send
-	   int packet_sent; 			//label current packet sent
-	   int expected_seq_no;			//expected label for the received packet
-	   int ack_no;					//ack number 
-	   int window_ack;				//window of ack received
-	   int byte_reads;				//bytes reads -> used for critical case
+		int window;					//the dimension of the window(packets in fly)
+	   	int tries;					//counter for the current tries
+	   	int send_base;				//label of the last packet not yet acked
+	   	int next_seq_no;				//label of next packet to send
+	   	int packet_sent; 			//label current packet sent
+	   	int expected_seq_no;			//expected label for the received packet
+	   	int ack_no;					//ack number 
+	   	int window_ack;				//window of ack received
+	   	int byte_reads;				//bytes reads -> used for critical case
 
 } State;
 
@@ -54,8 +54,8 @@ typedef struct relationship {
 	    *  for a timeout for the exact thread
 	    */
 
-	   pthread_t th;		//thread server child that response to a client
-	   State *state;		//the state of that specific connection
+	   	pthread_t th;		//thread server child that response to a client
+	   	State *state;		//the state of that specific connection
 
 } R;
 
@@ -63,9 +63,9 @@ typedef struct relationship {
 /* packet struct for go back n transport */
 typedef struct gobackn_packet{
 
-	   int seq_no;			//label of the packet
-	   int length;			//effective length of the packet, max 256
-	   char data[256];      //data
+	   	int seq_no;			//label of the packet
+	   	int length;			//effective length of the packet, max 256
+	   	char data[256];      //data
 	   
 }Packet;
 

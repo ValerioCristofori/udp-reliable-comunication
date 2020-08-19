@@ -291,7 +291,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	pthread_mutex_unlock(&lock);  //release resource
 
 	printf("Build buffer of bytes\n");
-	//build the buffer in a separate function
 	buffer = malloc(size);
 	memcpy(buffer, datagram, size);
 

@@ -11,6 +11,10 @@
 
 
 void init_state_receiver(State *s){
+	/*
+	 *  Init the struct State connection
+	 *  for the specific couple client - thread server
+	 */
 	s->window = 5;
 	s->expected_seq_no = 0;
 	s->ack_no = -1;
@@ -18,6 +22,11 @@ void init_state_receiver(State *s){
 
 
 int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockfd, struct sockaddr_in * addr_ptr){
+
+	/*
+	 *	Return the number of bytes received
+	 *  The data loss is simulated by the func drand48 and an input prob_loss  
+	 */
 
 	Packet current_packet;
 	int n;
@@ -37,18 +46,17 @@ int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockf
     current_packet.seq_no = ntohl (current_packet.seq_no);
 
 
-	if( drand48() < prob_loss ){
+	if( drand48() < prob_loss ){   //simulation of loss
 		printf("---------------- PACKET LOST ---------------\n");
 		return 0;
 	}
 	
 	printf (">>> Received packet %d with length %d\n", current_packet.seq_no, current_packet.length);
 
-	/* Send ack and store in buffer */
-	
+	// Send ack and store in buffer	
 
   	printf("Expected sequence number: %d\n", s->expected_seq_no );
-  	if (current_packet.seq_no == s->expected_seq_no )
+  	if (current_packet.seq_no == s->expected_seq_no )   //check if is the correct packet comparing labels
     {
       	
       	memcpy (&buffer[PACKET_SIZE * current_packet.seq_no], current_packet.data, current_packet.length);
@@ -59,7 +67,9 @@ int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockf
     	current_packet.length = 0;
     }
     printf (">>> Send ack %d\n", s->ack_no );
-    Packet current_ack; /* ack */
+
+    //Send the ack with lable ack_no
+    Packet current_ack; // ack 
 	current_ack.seq_no = htonl(s->ack_no );
 	current_ack.length = htonl(0);
 
@@ -70,12 +80,24 @@ int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockf
 	}
 
 
-	return current_packet.length;  
+	return current_packet.length;  //return 0 in cases: data loss of wrong ack  
 
 }
 
 
 int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
+
+
+		/*
+		 *  Return the dimension of datagram (bytes received)
+		 *  Function to start the receiving packets to sockaddr_in
+	     *  Implemented the go back n protocol for reliable data transfer
+	     *  Used the probability p to simulate the data loss and
+	     *  check the reliability.
+		 *
+		 *  After the receiving all the structured buffer is copied in a
+		 *  datagram struct 
+		 */
 
 		void* buffer;
 		State  *s;
@@ -94,8 +116,6 @@ int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_pt
 
 
 		printf("Bytes received %d\n", size );
-
-		//datagram = malloc( size*sizeof(char));
 
 		memcpy( datagram, buffer, size);
 

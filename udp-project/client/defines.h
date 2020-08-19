@@ -1,14 +1,14 @@
 #pragma once
 
 #define MAXFILE           16777216       // 2^24 bytes ----- 16 MB
-#define FILENAME_LENGTH   32
-#define COMMAND_LENGTH    5
-#define LENGTH_HEADER     85
+#define FILENAME_LENGTH   32				
+#define COMMAND_LENGTH    5				 //Lenght of the command client to server
+#define LENGTH_HEADER     85			 //Lenght of the datagram's header
 #define ERROR_MESSAGE_LENGTH  32
-#define TIMEOUT			  3
-#define MAXTRIES          10
-#define MAXLINE           1024
-#define PACKET_SIZE    	  256
+#define TIMEOUT			  3				 //Timeout of the go back n protocol 
+#define MAXTRIES          10			 //Upper bound of tries to send without good ack
+#define MAXLINE           1024			 //Max bytes take from input
+#define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
@@ -20,12 +20,12 @@
 /* datagram struct */
 typedef struct datagram_value {
       
-      char command[COMMAND_LENGTH];
-      char filename[FILENAME_LENGTH];
-      char error_message[ERROR_MESSAGE_LENGTH];
-      int  err;
-      int  length_file;
-      char file[MAXFILE];  
+      	char command[COMMAND_LENGTH];  				//specific operation: put, get, list, exit
+      	char filename[FILENAME_LENGTH];				//name of the file in put and get cases
+      	char error_message[ERROR_MESSAGE_LENGTH];		//type of error : case 1-5
+      	int  err;										//flag for error
+      	int  length_file;								//length data part
+      	char file[MAXFILE];  							//data
 
 } Datagram;
 
@@ -33,13 +33,13 @@ typedef struct datagram_value {
 /* state of communication */
 typedef struct state_communication {
 
-	   int window;
-	   int tries;
-	   int send_base;
-	   int next_seq_no;
-	   int packet_sent; 
-	   int expected_seq_no;
-	   int ack_no;
+		int window;					//the dimension of the window(packets in fly)
+	   	int tries;					//counter for the current tries
+	   	int send_base;				//label of the last packet not yet acked
+	   	int next_seq_no;				//label of next packet to send
+	   	int packet_sent; 			//label current packet sent
+	   	int expected_seq_no;			//expected label for the received packet
+	   	int ack_no;					//ack number 
 
 } State;
 
@@ -47,14 +47,15 @@ typedef struct state_communication {
 /* packet struct for go back n transport */
 typedef struct gobackn_packet{
 
-	   int seq_no;
-	   int length;
-	   char data[256];
+	   	int seq_no;			//label of the packet
+	   	int length;			//effective length of the packet, max 256
+	   	char data[256];      //data
+	   
 }Packet;
 
-/* utils functions */
-extern ssize_t FullWrite ( int fd , const void * buf , size_t count );
 
+
+/* utils functions */
 extern int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port, int option );
 
 extern int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port );
