@@ -10,6 +10,8 @@
 #define MAXLINE           1024			 //Max bytes take from input
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 #define KEY               'S'			 //key for encrypt/decrypt
+#define SERV_PORT         2222			 //num port where server main thread listening
+#define THRESHOLD         3				 //number of seconds after the connection is closed if server doesnt respond
 
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2

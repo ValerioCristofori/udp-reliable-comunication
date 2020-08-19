@@ -89,10 +89,10 @@ int datagram_setup_list( Datagram* datagram_ptr){
      * Else return the lenght of the datagram to send  
      */
 
-    FILE* fp;
-    char ch;
-    int length;
-    int i;
+    FILE* 		fp;
+    char 		ch;
+    int 		length;
+    int 		i;
 
 
 

@@ -21,12 +21,11 @@
 #include <unistd.h> 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> 
+#include <string.h>
+#include <netinet/in.h>
+
 
 #include "defines.h"
-
-#define SERV_PORT         2222
-#define THRESHOLD         3
 
 
 char *gets(char *s);
@@ -34,7 +33,7 @@ char *gets(char *s);
 
 struct sockaddr_in       servaddr;
 int                      sockfd;              // file descriptor
-Datagram                *datagram_ptr;
+Datagram                *datagram_ptr;        //pointer to the packet struct to be sent/received
 
 
 
@@ -96,20 +95,20 @@ void path_to_filename( char *path , char *filename ){
 
 
 int main(int argc, char *argv[]) {
-  int                      maxfd;								// number of byte receved from recvfrom or sendto
-  int                      n, tmp, size;
-  fd_set                   fds;                 // set di descrittori
-  char                     buff[MAXLINE];        // input string of the user
-  char                     *ptr;
-  socklen_t                len;
-  char                   **arguments = NULL;
-  FILE*                    fp;
-  char                    *dirs;
+  int                      maxfd;								  //number of byte receved from recvfrom or sendto
+  int                      n, tmp, size;          //temporary variables
+  fd_set                   fds;                   //set of descriptors
+  char                     buff[MAXLINE];         //input string of the user
+  char                    *ptr;                   //temporary pointer for user input management
+  socklen_t                len;                   //length of the sockaddr struct
+  char                   **arguments = NULL;      //arguments passed from input and parsed
+  FILE*                    fp;                    //file pointer 
+  char                    *dirs;                  //path of directories to create
   char                     command[FILENAME_LENGTH + 16];
   int                      fd;
-  short                    syn = 0x10;
-  int                      client_port;
-  struct sigaction         sa;
+  short                    syn = 0x10;            //syn message to begin the connection
+  int                      client_port;           //negotiated port with server
+  struct sigaction         sa;                    //sigaction struct to manage signal exceptions
 
 
   

@@ -24,10 +24,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <netinet/in.h>
+
 
 #include "defines.h"
 
-#define SERV_PORT          2222
 
 
 int                        numthreads   = 0;     // Number of thread open for conns                      
@@ -71,9 +72,9 @@ int filename_to_path( char* filename, char* path ){
      * Return  0 else
      */
     
-    FILE *p;
-    char command[FILENAME_LENGTH + 16];
-    char buffer[MAXLINE];
+    FILE    *p;   //file stream for output of shell script
+    char     command[FILENAME_LENGTH + 16];  //set of parsed parameters for shell 
+    char     buffer[MAXLINE];    //result of shell script
 
     sprintf(command, "./script-shell/search_dir.sh %s", filename);
     printf("%s is the command\n", command );
@@ -138,8 +139,8 @@ int generate_random_num_port(){
    * 		through the exception of the binding in the socket
    */
   
-  int lower = 2224;
-  int upper = 5000;
+  int   lower = 1024;
+  int   upper = 49151;
 
   return ( rand() % ( upper - lower + 1 ) + lower );
 
@@ -163,18 +164,17 @@ void *client_request( void *sockfd ){
    */
 
 
-  struct  sockaddr_in     clientaddr, relation;
-  Datagram                *datagram_ptr;
-  int                     n, sock, sock_data, fd;
-  int                     client_port, tmp, ret, size;
-  socklen_t               len;
-  FILE*                   fp;
-  pthread_t               whoami = pthread_self();
-  char                    path_file[40];
-  char                    command[FILENAME_LENGTH + 16];
-  char                    path[MAXLINE];
-  char                    *dirs;
-  short                   syn;
+  struct  sockaddr_in     clientaddr, addr;             //structs for socket connection
+  Datagram               *datagram_ptr;                 //pointer to the datagram, packet to send    
+  int                     sock, sock_data, fd;          //descriptors
+  int                     n, client_port, tmp, ret, size;  //int temporary variables
+  socklen_t               len;                          //length of sockaddr
+  FILE*                   fp;                           //file stream pointer of the datagram->file
+  pthread_t               whoami = pthread_self();      //whoami
+  char                    command[FILENAME_LENGTH + 16];//entire command for a shell script
+  char                    path[MAXLINE];                //entire path to a file from ./root
+  char                   *dirs;                         //path of the directory to create
+  short                   syn;                          //short message to begin the connection
   
 
         printf("Created a thread handler\n");  
@@ -182,9 +182,9 @@ void *client_request( void *sockfd ){
         thread_birth();
 
         memcpy(&sock,sockfd,sizeof(sock));
-        len = sizeof(relation);
+        len = sizeof(addr);
 
-        n = recvfrom( sock,  &syn,  sizeof(syn),  0, (struct sockaddr *)&relation,  &len );
+        n = recvfrom( sock,  &syn,  sizeof(syn),  0, (struct sockaddr *)&addr,  &len );
         if( n <= 0 ){
             perror( "recvfrom error" );
             thread_death();
@@ -211,7 +211,7 @@ void *client_request( void *sockfd ){
         //send the new port number to the client
         tmp = htonl(client_port);
         n = sendto( sock ,  &tmp,  sizeof(tmp) , 0 ,
-                    ( struct sockaddr *)&relation , sizeof( relation ));
+                    ( struct sockaddr *)&addr , sizeof( addr ));
         if ( n < 0 ) {
             perror ( " sendto error " );
             thread_death();
@@ -244,7 +244,7 @@ void *client_request( void *sockfd ){
                         
 
                         printf("put\n" );
-                        sprintf(path_file, "root/%s", datagram_ptr->filename);
+                        sprintf(path, "root/%s", datagram_ptr->filename);
 
                         if( strchr(datagram_ptr->filename, '/') != NULL){  //check if the program have to make some dirs
 
@@ -263,15 +263,15 @@ void *client_request( void *sockfd ){
                         }
                         //creating the file with 'path' name
 
-                        if ((fd = open( path_file, O_CREAT | O_RDWR | O_TRUNC, 0666)) == -1) {
-                            printf("Error opening file %s\n", path_file);
+                        if ((fd = open( path, O_CREAT | O_RDWR | O_TRUNC, 0666)) == -1) {
+                            printf("Error opening file %s\n", path);
                             thread_death();
                             close(sock_data);
                             pthread_exit(NULL);
                         }
 
                         if ((fp = fdopen(fd,"w+")) == NULL) {
-                            printf("Error fopening file %s\n",path_file);
+                            printf("Error fopening file %s\n",path);
                             thread_death();
                             close(sock_data);
                             pthread_exit(NULL);
@@ -405,10 +405,10 @@ void *client_request( void *sockfd ){
 
 int main(int argc, char *argv[]) {
   
-  int	                  sockfd; 						//file descriptor
-  fd_set                  sockets;
-  struct sockaddr_in	  servaddr;
-  pthread_t               threads[MAX_THREADS];
+  int	                    sockfd; 						  //file descriptor
+  fd_set                  sockets;              //set of file descriptors of the sockets
+  struct sockaddr_in	    servaddr;             //address variable
+  pthread_t               threads[MAX_THREADS]; //all the threads references 
   
 
 
