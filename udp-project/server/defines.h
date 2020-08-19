@@ -10,6 +10,7 @@
 #define MAXLINE           1024			 //Max bytes take from input
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 #define MAX_THREADS       10			 //Max thread opened in the same time for manage connections
+#define KEY          	  'S'
 
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
@@ -74,14 +75,32 @@ extern R **relations;   //global resource in server.c file
 
 /* utils functions */
 
-extern int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port, int option );
+extern int udp_socket_init_server( struct sockaddr_in  *addr,  char  *address, int   num_port, int option );
 
-extern int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port );
+extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, int   num_port );
 
 extern char** str_split(char* a_str, const char a_delim);
 
 extern void build_directories( char *path, char *dirs );
 
-extern void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in* addr_ptr, pthread_t whoami );
+extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr, pthread_t whoami );
 
-extern int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr, double prob_loss ); /* return number bytes read */
+extern int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in *addr_ptr, double prob_loss ); /* return number bytes read */
+
+
+/* datagram setup functions */
+
+extern void decrypt_content(FILE *fp, char *str, int length );
+
+extern int datagram_setup_get( Datagram *datagram, char *filename );
+
+extern int datagram_setup_list( Datagram *datagram);
+
+extern int datagram_setup_error( Datagram *datagram, int error );
+
+
+/* print functions */
+
+extern void print_datagram( Datagram *datagram);
+
+extern void print_state_sender(State *s);

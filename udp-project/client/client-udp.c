@@ -27,7 +27,6 @@
 
 #define SERV_PORT         2222
 #define THRESHOLD         3
-#define KEY               'S'
 
 
 char *gets(char *s);
@@ -38,167 +37,6 @@ int                      sockfd;              // file descriptor
 Datagram                *datagram_ptr;
 
 
-void print_datagram( Datagram *datagram_ptr){
-
-      printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
-      printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
-      printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );
-      printf("File content: %s, sizeof(): %ld\n", datagram_ptr->file, sizeof(datagram_ptr->file) );
-      printf("Error message: %s, sizeof(): %ld\n", datagram_ptr->error_message, sizeof(datagram_ptr->error_message) );
-      printf("Code error: %d, sizeof(): %ld\n", datagram_ptr->err, sizeof(datagram_ptr->err) );
-}
-
-void print_file( char *file, int length ){
-	
-  /*
-   *  Print the content of the 'file'
-   *  Used to print the list of the files
-   */
-	
-  char ch;
-
-  for (int i = 0; i < length; i++) { 
-        ch = file[i];
-        printf("%c", ch ); 
-        if (ch == EOF){ 
-            return;
-        } 
-      
-      }
-  printf("\n");
-}
-
-char Cipher(char ch) 
-{ 
-	/*
-	 * Return the encrypt or decrypt char matches with 'ch'
-	 */
-    return ch ^ KEY;  // the operator '^' make the XOR betw ch and KEY
-					  // KEY must be a char 
-}
-
-int datagram_setup_put( Datagram* datagram_ptr, char** arguments,  FILE *fp ){
-        
-       /*
-		* Return -1 if file is not supported 
-		* its length is greater than MAXFILE
-		* Else return the lenght of the datagram to send  
-		*/
-        
-        int length, i;
-        char ch, ch2;
-
-
-        // setupping the struct 
-        strcpy( datagram_ptr->command, arguments[0] );
-        printf("command length: %ld\n", sizeof(datagram_ptr->command) );
-
-        strcpy( datagram_ptr->filename, arguments[1] );
-        datagram_ptr->err = 0;
-
-        // build file of the datagram with file stream
-        fseek(fp, 0, SEEK_END);
-        length = ftell(fp);  //count the file length
-        fseek(fp, 0, SEEK_SET);
-	
-      	if( length >= MAXFILE ){
-            printf("Length of file %d\n", length );
-            return -1;
-      	}	
-        
-        datagram_ptr->length_file = length;
-
-        rewind(fp);  //rewind the file pointer to the start position
-
-		//encrypt all char one by one and set in the datagram->file
-        for ( i = 0; i < length; i++) {  
-
-            ch = fgetc(fp); 
-            ch2 = Cipher(ch); 
-            datagram_ptr->file[i] = ch2; 
-        }
-
-        datagram_ptr->file[i] = EOF;  //add the end of file byte
-        printf("File dimension %d\n", datagram_ptr->length_file);
-        
-
-        print_datagram(datagram_ptr);
-
-        return LENGTH_HEADER + datagram_ptr->length_file;
-
-}
-
-
-int datagram_setup_get( Datagram* datagram_ptr, char** arguments ){
-
-
-        // setupping the struct 
-        strcpy( datagram_ptr->command, arguments[0] );  //set command string
-        strcpy( datagram_ptr->filename, arguments[1] ); //set filename to get
-        datagram_ptr->err = 0;		//no error
-        datagram_ptr->length_file = 0;
-
-        
-
-        print_datagram(datagram_ptr);
-        
-        return LENGTH_HEADER + datagram_ptr->length_file;
-        
-
-} 
-
-int datagram_setup_list( Datagram* datagram_ptr, char** arguments ){ 
-
-        // setupping the struct 
-        strcpy( datagram_ptr->command, arguments[0] );  //set command string
-        datagram_ptr->err = 0;
-
-        datagram_ptr->length_file = 0;
-
-        print_datagram(datagram_ptr);
-
-
-        return LENGTH_HEADER + datagram_ptr->length_file;
- 
-        
-
-}
-
-int datagram_setup_exit( Datagram* datagram_ptr, char** arguments ){
-
-
-        // setupping the struct 
-        strcpy( datagram_ptr->command, arguments[0] );
-        datagram_ptr->err = 0;
-
-        datagram_ptr->length_file = 0;
-
-        print_datagram(datagram_ptr);
-
-
-        return LENGTH_HEADER + datagram_ptr->length_file;
- 
-        
-
-}
-
-int datagram_setup_exit_signal( Datagram* datagram_ptr){
-
-
-        // setupping the struct 
-        datagram_ptr->length_file = 0;
-        datagram_ptr->err = 1;  //set error flag to 1 
-								//exiting by signal
-        
-
-        print_datagram(datagram_ptr);
-
-
-        return LENGTH_HEADER + datagram_ptr->length_file;
- 
-        
-
-}
 
 
 void handler_alarm_conn (int ign)  /* handler for SIGALRM */
@@ -228,32 +66,6 @@ void handler_sigint() {
 
 }
 
-int stringCmpi(char *s1, char *s2)
-{
-    int i;
-    for(i=0; s1[i]!='\0'; i++)
-    {
-        if( toupper(s1[i])!=toupper(s2[i]) )
-            return 1;           
-    }
-    return 0;
-}
-
-void decrypt_content(FILE *fp, char* str, int length ){
-
-      int     i;
-      char    ch;
-
-      
-      for (i = 0; i<length; i++){ 
-    
-          // Input string into the file 
-          // single character at a time 
-          ch = Cipher(str[i]);
-          fputc(ch, fp); 
-     }
-}
-
 
 void path_to_filename( char *path , char *filename ){
 	
@@ -276,42 +88,8 @@ void path_to_filename( char *path , char *filename ){
       strcpy( filename, path );
 }
 
+//
 
-void manage_error(Datagram *datagram_ptr, int sockfd ){
-      
-      /*
-       *  Handler for the error messages
-       *  through error code and the cases
-       *  define in the file defines.h
-       */
-      
-      switch(datagram_ptr->err){
-
-
-          case 2:
-
-                printf("%s\n", ERROR_FILE_DOESNT_EXIST );
-                break;
-
-          case 3:
-
-                printf("%s\n", ERROR_SHELL_SCRIPT );
-                break;
-
-          case 4:
-
-                printf("%s\n", ERROR_SIGINT_SERVER );
-                exit(-1);
-
-          case 5:
-
-                printf("%s\n", ERROR_TOO_MANY_MATCHES );
-				break;
-
-
-      }
-
-}
 
 
 
@@ -523,7 +301,7 @@ int main(int argc, char *argv[]) {
                               printf("Start receiver\n");
                               size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1); /* Wait the response from the server */
                               if(size == -1){
-                                    manage_error(datagram_ptr, sockfd);
+                                    print_error_datagram(datagram_ptr, sockfd);
                                     goto retry;
                               }
 
@@ -601,7 +379,7 @@ int main(int argc, char *argv[]) {
                               printf("Start receiver\n");
                               size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);   /* Wait the response from the server */
                               if(size == -1){
-                                    manage_error(datagram_ptr, sockfd);
+                                    print_error_datagram(datagram_ptr, sockfd);
                                     goto retry;
                               }
                               printf("Bytes received %d\n", size );

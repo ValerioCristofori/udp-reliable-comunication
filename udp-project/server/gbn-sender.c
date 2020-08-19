@@ -16,7 +16,7 @@ pthread_mutex_t 	lock;
 
 
 
-
+//
 void init_state_sender(State *s){
 	/*
 	 *  Init the struct State connection
@@ -35,15 +35,6 @@ void init_state_sender(State *s){
 
 }
 
-void print_state_sender(State *s){
-	printf("----STATE SENDER----\n");
-	printf("Window size: %d\n", s->window);
-	printf("Tries number: %d\n", s->tries);
-	printf("Send base: %d\n", s->send_base);
-	printf("Next sequence number: %d\n", s->next_seq_no);
-	printf("Bytes reads: %d\n", s->byte_reads );
-	printf("Expected sequence number: %d\n", s->expected_seq_no);
-}
 
 void *start_timer_thread( void *whoami ){
 

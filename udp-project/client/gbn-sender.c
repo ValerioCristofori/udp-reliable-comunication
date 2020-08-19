@@ -49,15 +49,6 @@ void init_state_sender(){
 	ackno 						= -1;  //init ack to -1 for the initial critical case
 }
 
-void print_state_sender(){
-	printf("----STATE SENDER----\n");
-	printf("Window size: %d\n", state_send->window);
-	printf("Tries number: %d\n", state_send->tries);
-	printf("Send base: %d\n", state_send->send_base);
-	printf("Next sequence number: %d\n", state_send->next_seq_no);
-	printf("Expected sequence number: %d\n", state_send->expected_seq_no);
-}
-
 int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct sockaddr_in * addr_ptr ){
 
 
@@ -226,7 +217,7 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	// init variables for the sending
 	init_state_sender();
-	print_state_sender();
+	print_state_sender(state_send);
 	do{
 		if(byte_reads >= PACKET_SIZE)
 			//try to send packets in pipelined
@@ -235,7 +226,7 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		//wait ack
 		reliable_receive_ack( sockfd, addr_ptr );
 
-		print_state_sender();
+		print_state_sender(state_send);
 		printf("------ packet sent %d\n", state_send->packet_sent );
 	}
 	while( ackno != num_packet - 1 ); 

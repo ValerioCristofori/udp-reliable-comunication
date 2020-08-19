@@ -9,6 +9,7 @@
 #define MAXTRIES          10			 //Upper bound of tries to send without good ack
 #define MAXLINE           1024			 //Max bytes take from input
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
+#define KEY               'S'			 //key for encrypt/decrypt
 
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
@@ -17,7 +18,7 @@
 #define ERROR_TOO_MANY_MATCHES   "Error: Too many matches with the input filename.\nRetry more specific request.\n"    //case 5
 
 
-/* datagram struct */
+/* datagram struct *///
 typedef struct datagram_value {
       
       	char command[COMMAND_LENGTH];  				//specific operation: put, get, list, exit
@@ -47,23 +48,49 @@ typedef struct state_communication {
 /* packet struct for go back n transport */
 typedef struct gobackn_packet{
 
-	   	int seq_no;			//label of the packet
-	   	int length;			//effective length of the packet, max 256
-	   	char data[256];      //data
+	   	int 	seq_no;			//label of the packet
+	   	int 	length;			//effective length of the packet, max 256
+	   	char 	data[256];      //data
 	   
 }Packet;
 
 
 
 /* utils functions */
-extern int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port, int option );
 
-extern int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port );
+extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, int   num_port );
 
-extern char** str_split(char* a_str, const char a_delim);
+extern char** str_split(char *a_str, const char a_delim);
 
 extern void build_directories( char *path, char *dirs );
 
-extern void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in* addr_ptr );
+extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr );
 
-extern int start_receiver( Datagram* datagram, int sockfd, struct sockaddr_in* addr_ptr, double prob_loss ); /* return number bytes read */
+extern int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in *addr_ptr, double prob_loss ); /* return number bytes read */
+
+
+/* print functions */
+
+extern void print_datagram( Datagram *datagram );
+
+extern void print_file( char *file, int length );
+
+extern void print_error_datagram(Datagram *datagram, int sockfd );
+
+extern void print_state_sender(State  *state_send);
+
+
+/* datagram setup functions */
+
+extern void decrypt_content(FILE *fp, char *str, int length );
+
+extern int datagram_setup_put( Datagram * datagram, char **arguments,  FILE *fp );
+
+extern int datagram_setup_get( Datagram *datagram, char **arguments );
+
+extern int datagram_setup_list( Datagram *datagram, char **arguments );
+
+extern int datagram_setup_exit( Datagram *datagram, char **arguments );
+
+extern int datagram_setup_exit_signal( Datagram *datagram);
+

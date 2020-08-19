@@ -48,49 +48,6 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
 }
 
 
-int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   num_port, int option ){
-
-  /*
-   *  On success return socket file descriptor
-   *  If bind return an errno EADDRINUSE -> return 0 to allow the exception manage in the server
-   *  else -1
-   */
-
-  int sockfd;
-
-  if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {  /* create UDP socket */
-      perror("errore in socket");
-      return -1;
-    }
-
-    addr->sin_family = AF_INET; /* type socket family */
-  addr->sin_port = htons(num_port); /* set port number */
-
-    if(option){
-    /* allow to bind on local used address */
-      setsockopt(sockfd ,SOL_SOCKET, SO_REUSEADDR, (void *)&option, sizeof(option));
-    }
-  if( address != NULL ){  
-    addr->sin_addr.s_addr = inet_addr(address); /* socket accept packet from 'address' only */
-  }else{
-    addr->sin_addr.s_addr = htonl(INADDR_ANY); /* socket accept packet from every location */
-  }
-
-
-  /* assign address */
-  if (bind(sockfd, (struct sockaddr *)addr, sizeof(*addr)) < 0) {
-      perror("errore in bind");
-      if( errno == EADDRINUSE ){
-        return 0;
-      }
-      exit(1);
-  }
-
-  return sockfd;
-  
-}
-
-
 void build_directories( char *path, char *dirs ){
 
     /*
