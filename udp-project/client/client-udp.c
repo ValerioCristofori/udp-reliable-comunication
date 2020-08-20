@@ -34,7 +34,10 @@ char *gets(char *s);
 struct sockaddr_in       servaddr;
 int                      sockfd;              // file descriptor
 Datagram                *datagram_ptr;        //pointer to the packet struct to be sent/received
-
+int                      timeout; //Timeout of the go back n protocol
+int                      server_port;  //Num port where main thread wait connections
+int                      window;    //the dimension of the window(packets in fly)
+double                   prob_loss;
 
 
 
@@ -116,9 +119,14 @@ int main(int argc, char *argv[]) {
 
 
 
-  if (argc != 2) { /* controlla numero degli argomenti */
-    fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>\n");
-    exit(1);
+  if (argc != 6) { /* controlla numero degli argomenti */
+      fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability>\n");
+      exit(1);
+  }
+
+  if ( parse_argv( argv ) == -1 ){
+      fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability>\n");
+      exit(1);
   }
 
   /* handler a sigalarm for bad connection */
@@ -140,7 +148,7 @@ int main(int argc, char *argv[]) {
   
   memset((void *)&servaddr, 0, sizeof(servaddr));      /* set 0 servaddr struct */
   
-  sockfd = udp_socket_init_client( &servaddr, argv[1], SERV_PORT );
+  sockfd = udp_socket_init_client( &servaddr, argv[1], server_port );
   if( sockfd == -1 ){
     perror("socket init error");
     exit(-1);
@@ -148,7 +156,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  printf("Connection to the server on address %s and port %d\n", argv[1], SERV_PORT );
+  printf("Connection to the server on address %s and port %d\n", argv[1], server_port );
 
 
   FD_ZERO(&fds);  /* Init with 0 all the entry of fds set */
@@ -298,7 +306,7 @@ int main(int argc, char *argv[]) {
                               memset( datagram_ptr, 0, sizeof(*datagram_ptr));
 
                               printf("Start receiver\n");
-                              size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1); /* Wait the response from the server */
+                              size = start_receiver(datagram_ptr, sockfd, &servaddr); /* Wait the response from the server */
                               if(size == -1){
                                     print_error_datagram(datagram_ptr, sockfd);
                                     goto retry;
@@ -376,7 +384,7 @@ int main(int argc, char *argv[]) {
                               //free(datagram_ptr);
 
                               printf("Start receiver\n");
-                              size = start_receiver(datagram_ptr, sockfd, &servaddr, 0.1);   /* Wait the response from the server */
+                              size = start_receiver(datagram_ptr, sockfd, &servaddr);   /* Wait the response from the server */
                               if(size == -1){
                                     print_error_datagram(datagram_ptr, sockfd);
                                     goto retry;

@@ -5,12 +5,10 @@
 #define COMMAND_LENGTH    5				 //Lenght of the command client to server
 #define LENGTH_HEADER     85			 //Lenght of the datagram's header
 #define ERROR_MESSAGE_LENGTH  32
-#define TIMEOUT			  3				 //Timeout of the go back n protocol 
 #define MAXTRIES          10			 //Upper bound of tries to send without good ack
 #define MAXLINE           1024			 //Max bytes take from input
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 #define KEY               'S'			 //key for encrypt/decrypt
-#define SERV_PORT         2222			 //num port where server main thread listening
 #define THRESHOLD         3				 //number of seconds after the connection is closed if server doesnt respond
 
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
@@ -36,7 +34,6 @@ typedef struct datagram_value {
 /* state of communication */
 typedef struct state_communication {
 
-		int window;					//the dimension of the window(packets in fly)
 	   	int tries;					//counter for the current tries
 	   	int send_base;				//label of the last packet not yet acked
 	   	int next_seq_no;				//label of next packet to send
@@ -57,8 +54,16 @@ typedef struct gobackn_packet{
 }Packet;
 
 
+extern int 	 	timeout;	//Timeout of the go back n protocol
+extern int 	 	server_port;  //Num port where main thread wait connections
+extern int 	 	window;    //the dimension of the window(packets in fly)
+extern double   prob_loss;
+
+
 
 /* utils functions */
+
+extern int parse_argv( char **argv );
 
 extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, int   num_port );
 
@@ -68,7 +73,7 @@ extern void build_directories( char *path, char *dirs );
 
 extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr );
 
-extern int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in *addr_ptr, double prob_loss ); /* return number bytes read */
+extern int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in *addr_ptr); /* return number bytes read */
 
 
 /* print functions */

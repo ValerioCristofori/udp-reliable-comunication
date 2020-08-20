@@ -15,14 +15,12 @@ void init_state_receiver(State *s){
 	 *  Init the struct State connection
 	 *  for the specific couple thread child - client
 	 */
-
-	s->window 			= 5;  //max packet in fly
 	s->expected_seq_no 	= 0;  
 	s->ack_no 			= -1;
 }
 
 
-int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockfd, struct sockaddr_in * addr_ptr){
+int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr_in * addr_ptr){
 
 	/*
 	 *	Return the number of bytes received
@@ -87,7 +85,7 @@ int reliable_receive_packet(State *s, char  *buffer, double prob_loss, int sockf
 }
 
 
-int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_ptr, double prob_loss ){
+int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_ptr ){
 
 		/*
 		 *  Return the dimension of datagram (bytes received)
@@ -100,17 +98,18 @@ int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in * addr_pt
 		 *  datagram struct 
 		 */
 
-		void* buffer;
+		void   *buffer;
 		State  *s;
-		int   datasize = sizeof(*datagram);
-		int   size = 0, n;
+		int     datasize = sizeof(*datagram);
+		int     size = 0, n;
+		
 		buffer = malloc( datasize );
 		s = malloc(sizeof(*s));
 
 		init_state_receiver(s);
 		printf("Start receiving bytes\n");
 
-		while( (n = reliable_receive_packet(s, buffer, prob_loss, sockfd, addr_ptr) ) == PACKET_SIZE || n == 0  ){
+		while( (n = reliable_receive_packet(s, buffer, sockfd, addr_ptr) ) == PACKET_SIZE || n == 0  ){
 			size += n;
 		}
 		size += n;

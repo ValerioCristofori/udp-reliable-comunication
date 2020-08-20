@@ -14,6 +14,45 @@
 
 #include "defines.h"
 
+
+int parse_argv( char **argv ){
+
+  int ret;
+
+    ret = atoi( argv[2] );   //take port number
+    if ( ret == 0 ){
+        printf("Port number exception\n");
+        return -1;
+    }
+    server_port = ret;
+
+    ret = atoi( argv[3] );   //take window size
+    if ( ret == 0 ){
+        printf("Window size exception\n");
+        return -1;
+    }
+    window      = ret;
+
+    ret = atoi( argv[4] );   //take timeout dimension
+    if ( ret == 0 ){
+        printf("Timeout exception\n");
+        return -1;
+    }
+    timeout     = ret;
+
+
+    //take loss probability
+    if ( (prob_loss = strtod(argv[5], NULL) ) == 0.0 ){
+        printf("Probability exception\n");
+        return -1;
+    }
+
+
+    return 0;
+}
+
+
+
 int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   num_port ){
 
   /*

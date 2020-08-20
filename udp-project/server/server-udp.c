@@ -34,7 +34,10 @@
 int                        numthreads   = 0;     // Number of thread open for conns                      
 pthread_mutex_t            mut          = PTHREAD_MUTEX_INITIALIZER;   //  Mutex for upgrade numthread resource
 R                        **relations;		     // Ptr to the list of relations between one thread and its sender state
-
+int                        timeout; //Timeout of the go back n protocol
+int                        server_port;  //Num port where main thread wait connections
+int                        window;    //the dimension of the window(packets in fly)
+double                     prob_loss;
 
 
 void thread_death(){
@@ -229,7 +232,7 @@ void *client_request( void *sockfd ){
 
 			//Wait for the request from the client
             printf("Start receiver\n");
-            size = start_receiver(datagram_ptr, sock_data, &clientaddr, 0.1);  // call blocker
+            size = start_receiver(datagram_ptr, sock_data, &clientaddr);  // call blocker
             if( size == -1 ){
                   manage_error_signal(datagram_ptr, sock_data);
             }
@@ -412,11 +415,21 @@ int main(int argc, char *argv[]) {
   
 
 
+      if (argc != 5) { /* controlla numero degli argomenti */
+          fprintf(stderr, "howtouse: ./server-udp <Server port number>  <Window size>  <Timeout dimension>  <Loss probability>\n");
+          exit(1);
+      }
+
+      if (parse_argv( argv ) == -1){
+          fprintf(stderr, "howtouse: ./server-udp <Server port number>  <Window size>  <Timeout dimension>  <Loss probability>\n");
+          exit(1);
+      }
+
 
       // clear the address
       memset((void *)&servaddr, 0, sizeof(servaddr));
       // create the udp socket 
-      sockfd = udp_socket_init_server( &servaddr, NULL, SERV_PORT, 1 );
+      sockfd = udp_socket_init_server( &servaddr, NULL, server_port , 1 );
       if( sockfd == -1 ){
         perror("socket server init error");
         exit(-1);

@@ -17,7 +17,7 @@ void print_datagram( Datagram *datagram_ptr){
 
 void print_state_sender(State  *state_send){
 		printf("----STATE SENDER----\n");
-		printf("Window size: %d\n", state_send->window);
+		printf("Window size: %d\n", window);
 		printf("Tries number: %d\n", state_send->tries);
 		printf("Send base: %d\n", state_send->send_base);
 		printf("Next sequence number: %d\n", state_send->next_seq_no);

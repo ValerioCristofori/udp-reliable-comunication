@@ -23,7 +23,6 @@ void init_state_sender(State *s){
 	 *  for the specific couple thread child - client
 	 */
 
-	s->window 			= 5;  //max packet in fly
 	s->tries 			= 0;  //init count tries
 	s->send_base 		= 0;  
 	s->packet_sent 		= 0;
@@ -47,7 +46,7 @@ void *start_timer_thread( void *whoami ){
 
 	pthread_t *t = (pthread_t *)whoami;
 
-	sleep(TIMEOUT);              //after TIMEOUT secs send the alarm to the specific thread
+	sleep(timeout);              //after TIMEOUT secs send the alarm to the specific thread
 	pthread_kill( *t , SIGALRM);
 
 	pthread_exit((void *)0);     //exit from the alarm thread
@@ -121,7 +120,7 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 		tmp_length = PACKET_SIZE; //init for exiting in the first while loop
 
 
-		while( (s->next_seq_no < s->window + s->send_base) && (s->tries < MAXTRIES) && ( tmp_length == PACKET_SIZE ) ){
+		while( (s->next_seq_no < window + s->send_base) && (s->tries < MAXTRIES) && ( tmp_length == PACKET_SIZE ) ){
 			
 			Packet current_packet;  //declare packet to be sent
 			// setup packet
@@ -178,7 +177,7 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 	int    		byte_response;
 	socklen_t   len;
 
-	ack.seq_no = -1*(s->window);
+	ack.seq_no = -1*window;
 
 	len = sizeof(*addr_ptr);
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
@@ -225,6 +224,7 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 			}
 			else{ // not all packet acked
 				printf("Restart TO\n");
+				s->tries = 0;
 				if( *th != 0 ){
 					printf("kill %ld\n", *th );
 					pthread_cancel(*th);

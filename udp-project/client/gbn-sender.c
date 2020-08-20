@@ -37,8 +37,6 @@ void init_state_sender(){
 	 *  Init the struct State connection
 	 *  for the specific couple thread child - client
 	 */
-
-	state_send->window 			= 5;  //max packet in fly
 	state_send->tries 			= 0;  //init count tries
 	state_send->send_base 		= 0;
 	state_send->packet_sent 	= 0;
@@ -63,8 +61,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 		tmp_length = PACKET_SIZE;
 
-
-		while( (state_send->next_seq_no < state_send->window + state_send->send_base) && (state_send->tries < MAXTRIES) && ( tmp_length == PACKET_SIZE ) ){
+		while( (state_send->next_seq_no < window + state_send->send_base) && (state_send->tries < MAXTRIES) && ( tmp_length == PACKET_SIZE ) ){
 			
 			Packet current_packet;
 			// setup packet
@@ -91,7 +88,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 			if( state_send->send_base == state_send->next_seq_no ){  // when start the timer according to gbn
 				
-				alarm(TIMEOUT);
+				alarm(timeout);
 				printf("Created timer\n");
 			}
 
@@ -118,7 +115,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 	socklen_t    	len;
 
 	// init -1 for manage case: lost first packet
-	ack.seq_no = -1*(state_send->window);
+	ack.seq_no = -1*window;
 
 	len = sizeof(*addr_ptr);
 	while( (byte_response = recvfrom(sockfd, &ack, sizeof (int) * 2, 0,(struct sockaddr *) addr_ptr, &len)) < 0){
@@ -156,7 +153,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 			state_send->send_base = (ackno + 1);
 			printf ("received ack %d\n", ackno);
 
-			if( state_send->send_base == state_send->next_seq_no ){  //received the correct ack
+			if( state_send->send_base == state_send->next_seq_no  ){  //received the correct ack
 				window_ack--;
 				alarm (0); /* clear alarm */
 				state_send->tries = 0;
@@ -165,7 +162,9 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 			}
 			else{ // not all packet acked
 				printf("Restart TO\n");
-				alarm(TIMEOUT); /* reset alarm */
+				state_send->tries = 0;
+				alarm(timeout); /* reset alarm */
+				
 			}
 
 	}
