@@ -1,12 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "defines.h"
 
 
 
 void print_datagram( Datagram *datagram_ptr){
-
       printf("\nCommand: %s, sizeof(): %ld\n", datagram_ptr->command, sizeof(datagram_ptr->command) );
       printf("Filename: %s, sizeof(): %ld\n", datagram_ptr->filename, sizeof(datagram_ptr->filename) );
       printf("File size: %d, sizeof(): %ld\n", datagram_ptr->length_file, sizeof(datagram_ptr->length_file) );

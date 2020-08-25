@@ -1,4 +1,18 @@
 #pragma once
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <arpa/inet.h>
+#include <signal.h>
+#include <sys/select.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <ctype.h>
+#include <unistd.h> 
+#include <stdio.h> 
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <netinet/in.h>
 
 #define MAXFILE           16777216       // 2^24 bytes ----- 16 MB
 #define FILENAME_LENGTH   32				
@@ -64,7 +78,7 @@ typedef struct gobackn_packet{
 
 	   	int seq_no;			//label of the packet
 	   	int length;			//effective length of the packet, max 256
-	   	char data[256];      //data
+	   	char data[PACKET_SIZE];      //data
 	   
 }Packet;
 

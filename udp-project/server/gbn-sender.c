@@ -1,13 +1,3 @@
-#include <stdio.h>		
-#include <sys/socket.h>		
-#include <arpa/inet.h>		
-#include <stdlib.h>		
-#include <string.h>		
-#include <unistd.h>		
-#include <errno.h>		
-#include <pthread.h>
-#include <signal.h>	
-
 #include "defines.h"
 
 int   				num_conn = 0;

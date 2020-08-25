@@ -8,3 +8,6 @@ OBJ = utils.o server-udp.o gbn-sender.o gbn-receiver.o print.o datagram-setup.o
 
 server-udp: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
+
+clean:
+	-rm *.o $(OBJ)

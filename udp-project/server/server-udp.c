@@ -10,23 +10,6 @@
  *
  *
  */
-
-#include <sys/types.h> 
-#include <sys/socket.h> 
-#include <arpa/inet.h>
-#include <signal.h>
-#include <sys/select.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <ctype.h>
-#include <unistd.h> 
-#include <stdio.h> 
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <netinet/in.h>
-
-
 #include "defines.h"
 
 
