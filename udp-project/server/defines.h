@@ -87,7 +87,7 @@ typedef struct gobackn_packet{
 extern int 	 timeout;	//Timeout of the go back n protocol
 extern int 	 server_port;  //Num port where main thread wait connections
 extern int 	 window;    //the dimension of the window(packets in fly)
-extern double   prob_loss;
+extern int   prob_loss;
 
 
 extern R **relations;   //global resource in server.c file

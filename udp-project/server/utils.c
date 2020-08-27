@@ -31,10 +31,12 @@ int parse_argv( char **argv ){
 
 
     //take loss probability
-    if ( (prob_loss = strtod(argv[4], NULL) ) == 0.0 ){
-        printf("Probability exception\n");
+    prob_loss = atoi(argv[4]);
+    if ( prob_loss < 0 || prob_loss > 100 ){
+        printf("Probability exception\nType number x tc. 0 < x < 100\n");
         return -1;
     }
+
 
 
     return 0;

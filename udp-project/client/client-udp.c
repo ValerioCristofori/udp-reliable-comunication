@@ -22,7 +22,7 @@ Datagram                *datagram_ptr;        //pointer to the packet struct to 
 int                      timeout; //Timeout of the go back n protocol
 int                      server_port;  //Num port where main thread wait connections
 int                      window;    //the dimension of the window(packets in fly)
-double                   prob_loss;
+int                      prob_loss;
 int                      adaptive;
 
 

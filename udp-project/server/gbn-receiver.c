@@ -20,6 +20,7 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
 
 	Packet 		current_packet;
 	int 		n;
+	int 		rnd;
 	socklen_t 	len;
 
 	memset(&current_packet, 0, sizeof(current_packet)); //clearing struct
@@ -35,8 +36,9 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
     current_packet.length = ntohl (current_packet.length); 
     current_packet.seq_no = ntohl (current_packet.seq_no);
 
-
-	if( drand48() < prob_loss ){    //simulation of loss
+    rnd = rand() % 100;
+    printf("Tentativo randomico %d\n", rnd );
+	if( rnd < prob_loss ){    //simulation of loss
 		printf("---------------- PACKET LOST ---------------\n");
 		return 0;
 	}
