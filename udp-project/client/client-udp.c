@@ -23,6 +23,7 @@ int                      timeout; //Timeout of the go back n protocol
 int                      server_port;  //Num port where main thread wait connections
 int                      window;    //the dimension of the window(packets in fly)
 double                   prob_loss;
+int                      adaptive;
 
 
 
@@ -104,13 +105,13 @@ int main(int argc, char *argv[]) {
 
 
 
-  if (argc != 6) { /* controlla numero degli argomenti */
-      fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability>\n");
+  if (argc != 7) { /* controlla numero degli argomenti */
+      fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability> <Adaptive timeout mode 1=on/0=off>\n");
       exit(1);
   }
 
   if ( parse_argv( argv ) == -1 ){
-      fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability>\n");
+      fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability> <Adaptive timeout mode 1=on/0=off>\n");
       exit(1);
   }
 

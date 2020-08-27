@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <math.h>
+
 #include "defines.h"
 
 

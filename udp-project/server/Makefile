@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -Wall -lpthread -pthread
+CFLAGS = -Wall -lpthread -pthread -lm
 DEPS = defines.h
 OBJ = utils.o server-udp.o gbn-sender.o gbn-receiver.o print.o datagram-setup.o
 
 %.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $< 
 
 server-udp: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^

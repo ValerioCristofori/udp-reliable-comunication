@@ -4,6 +4,15 @@ State  	*state_send;
 int 	 ackno;
 int 	 window_ack;
 int 	 byte_reads;
+double 	 current_timer;
+
+double 					   *array_estimate; 
+double 						estimate_RTT;
+struct timeval 				time_begin, time_end;
+double 						sample_RTT;
+int 						num_index;
+int 						count;
+
 
 
 void handler_alarm (int ign)	/* handler for SIGALRM */
@@ -67,6 +76,9 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 		    current_packet.length = htonl(tmp_length);
 		    memcpy (current_packet.data, buffer + ((state_send->packet_sent) * PACKET_SIZE), tmp_length); /*copy buffer data */
 
+		    //start timer for adaptive timer
+		    if (adaptive) gettimeofday(&time_begin, NULL);
+
 		    printf("Size of the packet %ld\n", sizeof(current_packet) );
 		    n = sendto(sockfd, &current_packet, (sizeof (int) * 2) + tmp_length, 0,(struct sockaddr *) addr_ptr,sizeof(*addr_ptr));
 		    printf("%d\n", n );
@@ -79,7 +91,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 			if( state_send->send_base == state_send->next_seq_no ){  // when start the timer according to gbn
 				
-				alarm(timeout);
+				alarm(current_timer);
 				printf("Created timer\n");
 			}
 
@@ -94,7 +106,7 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 
 
-int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
+int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 
 	/*
 	 *  Return the number of the byte read from the socket in sockaddr
@@ -114,6 +126,9 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 
 			if (errno == EINTR)	// alarm went off 
 	  		{
+	  			if(adaptive){
+	  				current_timer = reset_adaptive_timer(estimate_RTT, sample_RTT, array_estimate, num_index, count);
+	  			}
 	    		if (state_send->tries < MAXTRIES)	// incremented by alarm handler
 	      		{
 					printf ("timed out, %d more tries...\n", MAXTRIES - state_send->tries);
@@ -148,13 +163,21 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr ){
 				window_ack--;
 				alarm (0); /* clear alarm */
 				state_send->tries = 0;
+				if(adaptive){
+					gettimeofday(&time_end, NULL);
+					current_timer = change_adaptive_timer(time_begin, time_end, estimate_RTT, sample_RTT, array_estimate, num_index, count);
+				}
 				return ackno;
 
 			}
 			else{ // not all packet acked
 				printf("Restart TO\n");
 				state_send->tries = 0;
-				alarm(timeout); /* reset alarm */
+				if(adaptive){
+					gettimeofday(&time_end, NULL);
+					current_timer = change_adaptive_timer(time_begin, time_end, estimate_RTT, sample_RTT, array_estimate, num_index, count);
+				}
+				alarm(current_timer); /* reset alarm */
 				
 			}
 
@@ -180,10 +203,19 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	 *  And segmented in packet of PACKETSIZE length
 	 *  
 	 */
-
 	struct sigaction 			act;
 	char 					   *buffer;
 	int 						num_packet = (size/PACKET_SIZE) + 1;
+
+	//init variables
+	current_timer = timeout;
+	estimate_RTT = timeout;	
+	sample_RTT = 0;
+	num_index = 1;
+	count = 0;
+	array_estimate = malloc(100 * sizeof(double));
+	memset(array_estimate, 0, 100*sizeof(double));
+	*array_estimate = timeout;
 	
 	printf("Number of packet to be send %d\n", num_packet);
 
@@ -211,10 +243,10 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	do{
 		if(byte_reads >= PACKET_SIZE)
 			//try to send packets in pipelined
-			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr );
+			byte_reads = reliable_send_datagram( buffer, size, sockfd, addr_ptr);
 
 		//wait ack
-		reliable_receive_ack( sockfd, addr_ptr );
+		reliable_receive_ack( sockfd, addr_ptr);
 
 		print_state_sender(state_send);
 		printf("------ packet sent %d\n", state_send->packet_sent );

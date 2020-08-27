@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 
 
@@ -26,6 +27,8 @@
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 #define KEY               'S'			 //key for encrypt/decrypt
 #define THRESHOLD         3				 //number of seconds after the connection is closed if server doesnt respond
+#define ALPHA			  0.125
+#define BETA 			  0.25
 
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
@@ -74,6 +77,7 @@ extern int 	 	timeout;	//Timeout of the go back n protocol
 extern int 	 	server_port;  //Num port where main thread wait connections
 extern int 	 	window;    //the dimension of the window(packets in fly)
 extern double   prob_loss;
+extern int 		adaptive;
 
 
 
@@ -84,6 +88,10 @@ extern int parse_argv( char **argv );
 extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, int   num_port );
 
 extern char** str_split(char *a_str, const char a_delim);
+
+extern int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double estimate_RTT, double sample_RTT, double * array_estimate, int index, int count);
+
+extern int reset_adaptive_timer(double estimate_RTT, double sample_RTT, double * array_estimate, int index, int count);
 
 extern void build_directories( char *path, char *dirs );
 

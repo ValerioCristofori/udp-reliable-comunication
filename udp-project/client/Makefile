@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -lm
 DEPS = defines.h
 OBJ = client-udp.o utils.o gbn-receiver.o gbn-sender.o print.o datagram-setup.o
 
