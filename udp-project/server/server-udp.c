@@ -63,19 +63,21 @@ int filename_to_path( char* filename, char* path ){
     char     buffer[MAXLINE];    //result of shell script
 
     sprintf(command, "./script-shell/search_dir.sh %s", filename);
-    printf("%s is the command\n", command );
-
     p = popen(command, "r");  /* launching shell script and creating a pipe 
 										for the results */
     
     if (p != NULL) {
       fscanf(p, "%[^\n]", buffer);
       if( strstr(buffer, filename) == NULL ){
+          red();
           printf("file doesnt exist\n");
+          reset_color();
           return -1;
       }
       if( strstr(buffer, "./root/") != NULL ){
+          red();
           printf("too many file matches with this filename\n");
+          reset_color();
           return -2;
       }  
       printf("result of the shell script: %s\n", buffer );
@@ -102,8 +104,9 @@ void manage_error_signal(Datagram *datagram_ptr, int sockfd ){
 
           case 1:
           default:
-                
-                printf("The client finished through signal\nExiting from the thread child\n" );
+                red();
+                printf("The client finished through signal.Exiting from the thread child\n" );
+                reset_color();
                 thread_death();
                 close(sockfd);
                 pthread_exit(NULL);
@@ -162,8 +165,9 @@ void *client_request( void *sockfd ){
   char                   *dirs;                         //path of the directory to create
   short                   syn;                          //short message to begin the connection
   
-
+        green();
         printf("Created a thread handler\n");  
+        reset_color();
         pthread_detach(whoami);    /* when a detached thread terminates releases resources */
         thread_birth();
 
@@ -172,11 +176,15 @@ void *client_request( void *sockfd ){
 
         n = recvfrom( sock,  &syn,  sizeof(syn),  0, (struct sockaddr *)&addr,  &len );
         if( n <= 0 ){
+            red();
             perror( "recvfrom error" );
+            reset_color();
             thread_death();
             pthread_exit(NULL);
         } 
+        green();
         printf("Syn received: %u\n", syn );
+        reset_color();
 
     retry_num_port:  //label used when i try to use a portno that already exist
 
@@ -187,10 +195,14 @@ void *client_request( void *sockfd ){
         sock_data = udp_socket_init_server( &clientaddr, NULL, client_port, 0 );
         if( sock_data == -1 ){
             thread_death();
+            red();
             perror("socket init error");
+            reset_color();
             pthread_exit( NULL );
         }else if( sock_data == 0 ){
+            yellow();
             printf("Try to use a port already used\n");
+            reset_color();
             goto retry_num_port;
         }
 
@@ -199,7 +211,9 @@ void *client_request( void *sockfd ){
         n = sendto( sock ,  &tmp,  sizeof(tmp) , 0 ,
                     ( struct sockaddr *)&addr , sizeof( addr ));
         if ( n < 0 ) {
+            red();
             perror ( " sendto error " );
+            reset_color();
             thread_death();
             pthread_exit(NULL);
         }
@@ -227,16 +241,12 @@ void *client_request( void *sockfd ){
                         
 
                         //------------------- put body --------------------------
-                        
-
-                        printf("put\n" );
                         sprintf(path, "root/%s", datagram_ptr->filename);
 
                         if( strchr(datagram_ptr->filename, '/') != NULL){  //check if the program have to make some dirs
 
                               //take the name of all the dirs
                               //deleting the last word until '/'
-                              printf("Build directories\n");
                               dirs = malloc( sizeof(datagram_ptr->filename) );
                               build_directories(datagram_ptr->filename, dirs);
 
@@ -250,14 +260,18 @@ void *client_request( void *sockfd ){
                         //creating the file with 'path' name
 
                         if ((fd = open( path, O_CREAT | O_RDWR | O_TRUNC, 0666)) == -1) {
+                            red();
                             printf("Error opening file %s\n", path);
+                            reset_color();
                             thread_death();
                             close(sock_data);
                             pthread_exit(NULL);
                         }
 
                         if ((fp = fdopen(fd,"w+")) == NULL) {
+                            red();
                             printf("Error fopening file %s\n",path);
+                            reset_color();
                             thread_death();
                             close(sock_data);
                             pthread_exit(NULL);
@@ -281,36 +295,38 @@ void *client_request( void *sockfd ){
 
                         //------------------- get body --------------------------
 
-
-                        printf("get\n");
                         //check if the file exist in the root dir and subdirs
                         //if y setup datagram
                         //if n setup error in datagram
                         ret = filename_to_path(datagram_ptr->filename, path);
                         if( ret == 1 ){
+                            red();
                             printf("send error message to the client\n");
+                            reset_color();
                             size = datagram_setup_error( datagram_ptr, 3 );
 
                         
                         }else if( ret == -1 ){
+                            red();
                             printf("send error message to the client\n");
+                            reset_color();
                             size = datagram_setup_error( datagram_ptr, 2 );
                             
 
                         }else if( ret == -2 ){
-
+                            red();
                             printf("send error message to the client\n");
+                            reset_color();
                             size = datagram_setup_error( datagram_ptr, 5 );
 
                         }else{
-                            printf("path file: %s\n", path );
                             if( (size = datagram_setup_get( datagram_ptr, path ) ) == -1 ){  /* -1 if file doesn't exist */
                                 thread_death();
                                 close(sock_data);
                                 pthread_exit(NULL);
                             }else{
 
-                                printf("Il contenuto del file '%s': %s\n", path, datagram_ptr->file );
+                                printf("Content of the file '%s': %s\n", path, datagram_ptr->file );
 
                             }
 
@@ -333,10 +349,6 @@ void *client_request( void *sockfd ){
 
                         //------------------- list body --------------------------
 
-
-                        printf("list\n" );
-
-
                         /*
                          *  launch the shell script that build a file called 'tree'
                          * 	that contains the structure of th subdirectories of ./root/
@@ -357,11 +369,9 @@ void *client_request( void *sockfd ){
 
                         //------------------- exit body --------------------------
 
-
-                        printf("exit\n");
-
-
+                        green();
                         printf("Exiting from thread child...\n");
+                        reset_color();
                         //close the connection and free resources
                         thread_death(); 
                         close(sock_data);
@@ -369,8 +379,9 @@ void *client_request( void *sockfd ){
 
             }
             else{
-
+              red();
               perror("error with the arguments passed\n");
+              reset_color();
               thread_death();
               close(sock_data);
               pthread_exit(NULL);
@@ -396,15 +407,19 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in	    servaddr;             //address variable
   pthread_t               threads[MAX_THREADS]; //all the threads references 
   
-
+      printf("\033[2J\033[H");
 
       if (argc != 5) { /* controlla numero degli argomenti */
+          red();
           fprintf(stderr, "howtouse: ./server-udp <Server port number>  <Window size>  <Timeout dimension>  <Loss probability>\n");
+          reset_color();
           exit(1);
       }
 
       if (parse_argv( argv ) == -1){
+          red();
           fprintf(stderr, "howtouse: ./server-udp <Server port number>  <Window size>  <Timeout dimension>  <Loss probability>\n");
+          reset_color();
           exit(1);
       }
 
@@ -414,7 +429,9 @@ int main(int argc, char *argv[]) {
       // create the udp socket 
       sockfd = udp_socket_init_server( &servaddr, NULL, server_port , 1 );
       if( sockfd == -1 ){
+        red();
         perror("socket server init error");
+        reset_color();
         exit(-1);
       }
 
@@ -448,7 +465,9 @@ int main(int argc, char *argv[]) {
 
 
               if ( select(sockfd + 1,&sockets,NULL,NULL,NULL) < 0) {
+                  red();
                   perror("select()");
+                  reset_color();
                   return  -1;
               }
 

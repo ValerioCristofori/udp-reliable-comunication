@@ -51,11 +51,10 @@ void clear_thread( pthread_t *th ){
 	 * This procedure is used to
 	 * clear all the alarms killing all the thread alive
 	 */ 
-
+	yellow();
 	printf("Clearing all alarms\n");
 	
-
-	printf("kill %ld\n", *th );
+	reset_color();
 	pthread_cancel(*th);
 
 	
@@ -73,8 +72,9 @@ void handler_alarm (int ign)	/* handler for SIGALRM */
 			State      *s;
 			pthread_t   t;
   	
-			printf("-------------------------- TIMEOUT -------------------------------\n");
-			
+			bold_red();
+		  	printf("-------------------------- TIMEOUT -------------------------------\n");
+		  	reset_color();			
 			//search for the current relation
 			t = pthread_self();
 
@@ -116,6 +116,7 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 			// setup packet
 			
 			current_packet.seq_no = htonl(s->next_seq_no);
+			green();
 			printf("Trying to send packet number %d\n", s->next_seq_no );
 			if (( len_buffer - ((s->packet_sent) * PACKET_SIZE)) >= PACKET_SIZE) //length packet doesnt except packet size
 		        tmp_length = PACKET_SIZE; //length is the max size
@@ -130,8 +131,9 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 		    if ( n !=  (sizeof(int)*2 + tmp_length) ){  //Sending packet with sendto func
 		    	perror(" sent a different number of bytes ");
 
-		    	exit(1);
+		    	pthread_exit((void *)0);
 		    }
+		    reset_color();
 
 		    if( s->send_base == s->next_seq_no ){  // when start the timer according to gbn
 				
@@ -140,7 +142,9 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 					pthread_cancel(*th);
 				}
 				pthread_create(th, NULL, start_timer_thread, (void*)whoami ); //create the timer
-				printf("Created timer\n");
+				cyan();
+				printf(">>> Created timer\n");
+				reset_color();
 			}
 
 			//update variables
@@ -181,21 +185,24 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 					break;
 	      		}
 	    		else{
+					red();
 	    			perror("No Response");
-	    			exit(0);
+	    			reset_color();
+	    			pthread_exit((void *)0);
 	    		}
 	      	
 	  		}
 			else{
+				red();
 				perror("recvfrom() failed");
-				exit(0);
+				reset_color();
+				pthread_exit((void *)0);
 			}
 
 	}
 
 
 	s->ack_no = ntohl(ack.seq_no);
-	printf("Window of acks %d\n", s->window_ack );
 
 
 	if( byte_response && ( (s->window_ack == s->ack_no + 1) || (s->window_ack == s->ack_no - 1) || (s->window_ack == s->ack_no) ) ){
@@ -203,7 +210,9 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 
 			s->window_ack = s->ack_no + 1;
 			s->send_base = (s->ack_no + 1);
-			printf ("received ack %d\n", s->ack_no);
+			green();
+			printf (">>> Received ack %d\n", s->ack_no);
+			reset_color();
 
 			if( s->send_base == s->next_seq_no ){ //received the correct ack
 				s->window_ack--;
@@ -220,7 +229,9 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 					pthread_cancel(*th);
 				}
 				pthread_create(th, NULL, start_timer_thread, (void*)whoami );
-				printf("Created timer\n");
+				cyan();
+				printf(">>> Created timer\n");
+				reset_color();
 				
 			}
 
@@ -253,9 +264,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	pthread_t 				   *th;
 	int 						num_packet = (size/PACKET_SIZE) + 1;
 	
-	printf("Datagram dimension %d\n", size );
-	
-	printf("%d\n", num_packet );
 	printf("Number of packet to be send %d\n", num_packet);
 
 
@@ -285,8 +293,10 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	act.sa_flags = SA_SIGINFO;
 
     if (sigaction (SIGALRM, &act, NULL) < 0){  //add the handler for manage the TO
+		red();
 		perror("sigaction() failed for SIGALRM");
-	    exit(0);
+		reset_color();
+	    pthread_exit((void *)0);
 	}
 
 	// init variables for the sending
@@ -303,7 +313,9 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		reliable_receive_ack( s, sockfd, addr_ptr, whoami, th );
 
 		print_state_sender(s);
-		printf("------ packet sent %d\n", s->packet_sent );
+		blue();
+		printf(">>> Sent packet %d\n", s->packet_sent );
+		reset_color();
 	}
 	while( s->ack_no != num_packet - 1 ); // while the ack is not the last one
 

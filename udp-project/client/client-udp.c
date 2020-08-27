@@ -32,7 +32,9 @@ void handler_alarm_conn (int ign)  /* handler for SIGALRM */
 	/*
 	 * Exit from the client --> server not running
 	 */
+    red();
     printf("Error with the connection: server doesn't respond\n");
+    reset_color();
     exit(0);
 }
 
@@ -102,29 +104,37 @@ int main(int argc, char *argv[]) {
 
   
 
-
+  printf("\033[2J\033[H");
 
 
   if (argc != 7) { /* controlla numero degli argomenti */
+      red();
       fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability> <Adaptive timeout mode 1=on/0=off>\n");
-      exit(1);
+      reset_color();
+      exit(1 );
   }
 
   if ( parse_argv( argv ) == -1 ){
+      red();
       fprintf(stderr, "howtouse: ./client-udp <indirizzo IP server>  <port number>  <window size>  <timeout dimension>  <loss probability> <Adaptive timeout mode 1=on/0=off>\n");
+      reset_color();
       exit(1);
   }
 
   /* handler a sigalarm for bad connection */
   sa.sa_handler = handler_alarm_conn;
   if (sigfillset (&sa.sa_mask) < 0){ /* block everything in handler */
+      red();
       perror("sigfillset() failed");
+      reset_color();
       exit(0);
   }
   sa.sa_flags = 0;
 
     if (sigaction (SIGALRM, &sa, 0) < 0){
-    perror("sigaction() failed for SIGALRM");
+      red();
+      perror("sigaction() failed for SIGALRM");
+      reset_color();
       exit(0);
   }
 
@@ -136,31 +146,39 @@ int main(int argc, char *argv[]) {
   
   sockfd = udp_socket_init_client( &servaddr, argv[1], server_port );
   if( sockfd == -1 ){
+    red();
     perror("socket init error");
+    reset_color();
     exit(-1);
   }
 
 
-
+  blue();
   printf("Connection to the server on address %s and port %d\n", argv[1], server_port );
-
+  reset_color();
 
   FD_ZERO(&fds);  /* Init with 0 all the entry of fds set */
 
   //send del pacchetto di syn per richiedere una porta
+  yellow();
   printf("Syn sent\n");
+  reset_color();
 
   n = sendto( sockfd ,  &syn,  sizeof(syn) , 0 ,
               ( struct sockaddr *)&servaddr , sizeof( servaddr ));
   if ( n < 0 ) {
+    red();
     perror ( " sendto error " );
+    reset_color();
     exit ( -1);
   }
   len = sizeof(servaddr);
   //Wait the new port no 
   n = recvfrom( sockfd ,  &tmp,  sizeof(tmp),  0, (struct sockaddr *)&servaddr,  &len );
   if( n <= 0 ){
+      red();
       perror( "recvfrom error" );
+      reset_color();
       exit(-1);
   }
   client_port = ntohl(tmp); //setting the new port number for new socket 
@@ -172,11 +190,14 @@ int main(int argc, char *argv[]) {
   
   sockfd = udp_socket_init_client( &servaddr, argv[1], client_port );
   if( sockfd == -1 ){
+    red();
     perror("socket init error");
+    reset_color();
     exit(-1);
   }
-
-  printf("New socket with %d port number\n", ntohs(servaddr.sin_port) );
+  yellow();
+  printf("\nNew socket with %d port number\n", ntohs(servaddr.sin_port) );
+  reset_color();
 
   //set the handler for sigint signal
   sa.sa_handler = handler_sigint;
@@ -184,15 +205,20 @@ int main(int argc, char *argv[]) {
   sa.sa_flags = SA_SIGINFO;
 
   if (sigaction(SIGINT, &sa, NULL) == -1) {
+    red();
       printf("sigaction error\n");
       exit(-1); 
+    reset_color();
   }
 
 
   while(1){
     
     //-----------------------   Client body
-          printf("\nType something:\n");
+
+          green();
+          printf("\n\nType something:\n");
+          reset_color();
 
           /* use fileno() for conversion from FILE* to int */
           FD_SET( fileno(stdin), &fds );  /* add stdin file descriptor */
@@ -202,7 +228,9 @@ int main(int argc, char *argv[]) {
           maxfd = (fileno(stdin) < sockfd) ? (sockfd + 1): (fileno(stdin) + 1);  /* maxfd begin the max file descriptor + 1 */
 
           if (select(maxfd, &fds, NULL, NULL, NULL) < 0 ) { /* wait a descriptor ready in reading */
+                red();
                 perror("select error");
+                reset_color();
                 exit(1);
           }
 
@@ -219,11 +247,12 @@ int main(int argc, char *argv[]) {
                   *ptr = '\0';
                 
               }
-              printf("il buffer contiene: %s\n",  buff);
               arguments = str_split(buff, ' ');/* parsing the shell command */
      
               if( arguments == NULL ){
-                  printf("\nWrong arguments\nTry to type:\nput <path/filename>\nget <path/filename>\nlist\nexit\n");
+                  cyan();
+                  printf("\n\nWrong arguments\nTry to type:\nput <path/filename>\nget <path/filename>\nlist\nexit\n");
+                  reset_color();
                   goto retry;
               }
               
@@ -244,11 +273,14 @@ int main(int argc, char *argv[]) {
 
 
                               if( arguments[1] == NULL ){
+                                red();
                                   perror("You must insert the name of the file.");
+                                reset_color();
                                   goto retry;
                               }
-
-                              printf("put\n" );
+                              yellow();
+                              printf("Put\n" );
+                              reset_color();
 
                               
 
@@ -277,11 +309,15 @@ int main(int argc, char *argv[]) {
                               //------------------- get body --------------------------
 
                               if( arguments[1] == NULL ){
+                                  red();
                                   perror("You must insert the name of the file.");
+                                  reset_color();
                                   goto retry;
                               }
 
-                              printf("get\n");
+                              yellow();
+                              printf("Get\n" );
+                              reset_color();
 
                               size = datagram_setup_get( datagram_ptr,  arguments );
 
@@ -297,10 +333,6 @@ int main(int argc, char *argv[]) {
                                     print_error_datagram(datagram_ptr, sockfd);
                                     goto retry;
                               }
-
-
-                              //datagram received
-                              printf("Datagram ricevuto (comando get)\n");
                                                           
                               /*
                                *  Parsing the datagram and
@@ -311,7 +343,6 @@ int main(int argc, char *argv[]) {
 
                                     //take the name of all the dirs
                                     //deleting the last chars until '/'
-                                    printf("Build directories\n");
                                     dirs = malloc( sizeof(datagram_ptr->filename) );
                                     build_directories(datagram_ptr->filename, dirs);
 
@@ -323,7 +354,7 @@ int main(int argc, char *argv[]) {
                             
                               }
 
-                              printf("filename: %s\n", datagram_ptr->filename);
+                              printf("Filename: %s\n", datagram_ptr->filename);
                           
 
                               if ((fd = open( datagram_ptr->filename, O_CREAT | O_RDWR | O_TRUNC, 0666)) == -1) {
@@ -339,8 +370,9 @@ int main(int argc, char *argv[]) {
                               decrypt_content(fp, datagram_ptr->file, datagram_ptr->length_file);
                               fflush(fp);
 
+                              green();
                               printf("Success on download file %s\n", datagram_ptr->filename );
-
+                              reset_color();
 
 
 
@@ -357,7 +389,9 @@ int main(int argc, char *argv[]) {
                               //------------------- list body --------------------------
 
 
-                              printf("list\n" );
+                              yellow();
+                              printf("List\n" );
+                              reset_color();
 
                               size = datagram_setup_list( datagram_ptr,  arguments );
 
@@ -375,7 +409,6 @@ int main(int argc, char *argv[]) {
                                     print_error_datagram(datagram_ptr, sockfd);
                                     goto retry;
                               }
-                              printf("Bytes received %d\n", size );
                               print_datagram(datagram_ptr);
 
 
@@ -385,7 +418,9 @@ int main(int argc, char *argv[]) {
                 
               }else if( strcmp(arguments[0], "exit") == 0 ){
 
+                              red();
                               printf("Exiting...\n"); 
+                              reset_color();
                               
 
                               size = datagram_setup_exit( datagram_ptr,  arguments );
@@ -399,8 +434,9 @@ int main(int argc, char *argv[]) {
 
 
               }else{
-                 
+                  red();
                   printf("\nWrong arguments\nTry to type:\nput <path/filename>\nget <path/filename>\nlist\nexit\n");
+                  reset_color();
                   continue;
               }
               

@@ -26,6 +26,14 @@
 #define MAX_THREADS       10			 //Max thread opened in the same time for manage connections
 #define KEY          	  'S'			 //Key for encrypt/decrypt_content (using xor operator char by char)
 
+#define red() 			printf("\033[0;31m")
+#define bold_red() 		printf("\033[1;31m")
+#define blue()			printf("\033[0;34m")
+#define green()			printf("\033[0;32m")
+#define yellow()		printf("\033[01;33m")
+#define cyan()			printf("\033[0;36m")
+#define reset_color()   printf("\033[0m")
+
 #define ERROR_SIG_CLIENT   	     "Error: Client finished through signal\nExiting from the thread child.\n"             //case 1
 #define ERROR_FILE_DOESNT_EXIST  "Error: File does not exist.\n"													   //case 2
 #define ERROR_SHELL_SCRIPT 		 "Error: Server is working bad.\n"													   //case 3

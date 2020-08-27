@@ -23,8 +23,9 @@ void handler_alarm (int ign)	/* handler for SIGALRM */
 	 *  where n is the send base ( oldest packet sent not acked yet )
 	 */
 
-
+			bold_red();
 		  printf("-------------------------- TIMEOUT -------------------------------\n");
+		  reset_color();
 		  state_send->next_seq_no = state_send->send_base;  //going back to n according to the protocol
 		  state_send->packet_sent = state_send->send_base;
 		  byte_reads = PACKET_SIZE;
@@ -67,7 +68,8 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 			// setup packet
 			
 			current_packet.seq_no = htonl(state_send->next_seq_no);
-			printf("Trying to send packet number %d\n", state_send->next_seq_no );
+			green();
+			printf(">>> Trying to send packet number %d\n", state_send->next_seq_no );
 			if (( len_buffer - ((state_send->packet_sent) * PACKET_SIZE)) >= PACKET_SIZE) /* length packet_size doesnt except datagram */
 		        tmp_length = PACKET_SIZE;
 		    else
@@ -87,12 +89,14 @@ int reliable_send_datagram( void* buffer, int len_buffer, int sockfd, struct soc
 
 		    	exit(1);
 		    }
-
+		    reset_color();
 
 			if( state_send->send_base == state_send->next_seq_no ){  // when start the timer according to gbn
 				
 				alarm(current_timer);
-				printf("Created timer\n");
+				cyan();
+				printf(">>> Created timer\n");
+				reset_color();
 			}
 
 			//update variables
@@ -131,17 +135,23 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 	  			}
 	    		if (state_send->tries < MAXTRIES)	// incremented by alarm handler
 	      		{
-					printf ("timed out, %d more tries...\n", MAXTRIES - state_send->tries);
+	      			bold_red();
+					printf ("Timed out, %d more tries\n", MAXTRIES - state_send->tries);
+					reset_color();
 					break;
 	      		}
 	    		else{
+	    			red();
 	    			perror("No Response");
+	    			reset_color();
 	    			exit(0);
 	    		}
 	      	
 	  		}
 			else{
+				red();
 				perror("recvfrom() failed");
+				reset_color();
 				exit(0);
 			}
 
@@ -149,7 +159,6 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 
 
 	ackno = ntohl(ack.seq_no);
-	printf("Window of acks %d\n", window_ack );
 
 
 	if( byte_response && ( (window_ack == ackno + 1) || (window_ack == ackno - 1) || (window_ack == ackno) ) ){
@@ -157,7 +166,9 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 
 			window_ack = ackno + 1;
 			state_send->send_base = (ackno + 1);
-			printf ("received ack %d\n", ackno);
+			green();
+			printf (">>> Received ack %d\n", ackno);
+			reset_color();
 
 			if( state_send->send_base == state_send->next_seq_no  ){  //received the correct ack
 				window_ack--;
@@ -233,7 +244,9 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	act.sa_flags = SA_SIGINFO;
 
     if (sigaction (SIGALRM, &act, NULL) < 0){ //add the handler for manage the TO
+    	red();
 		perror("sigaction() failed for SIGALRM");
+		reset_color();
 	    exit(0);
 	}
 
@@ -249,7 +262,9 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		reliable_receive_ack( sockfd, addr_ptr);
 
 		print_state_sender(state_send);
-		printf("------ packet sent %d\n", state_send->packet_sent );
+		blue();
+		printf(">>> Sent packet %d\n", state_send->packet_sent );
+		reset_color();
 	}
 	while( ackno != num_packet - 1 ); 
 	//all datagram sent

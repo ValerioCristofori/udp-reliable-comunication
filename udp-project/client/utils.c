@@ -66,7 +66,9 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
   int option = 1; // option to set SO REUSEADDR
 
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {  /* create UDP socket */
+      red();
       perror("errore in socket");
+      reset_color();
       return -1;
     }
 
@@ -79,7 +81,9 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
   
   //socket of a client app
   if (inet_pton(AF_INET, address, &(addr->sin_addr) ) <= 0) {
+      red();
       fprintf(stderr, "errore in inet_pton per %s", address);
+      reset_color();
     return -1;
   }
 
@@ -127,18 +131,20 @@ int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, do
             
         
         *sample_RTT = (double)(time_end.tv_usec - time_begin.tv_usec) / 1000000 + (double)(time_end.tv_sec - time_begin.tv_sec);
-        printf("Calculate RTT : %f\n", *sample_RTT );
+        cyan();
+        printf("Calculated RTT:      %f\n", *sample_RTT );
 
         //calcolo nuovo timer
         *estimate_RTT = estimate_RTT_function(estimate_RTT, sample_RTT);
-        printf("Estimate RTT to %d\n", (int)(*estimate_RTT) );
+        printf("Estimated RTT:       %d\n", (int)(*estimate_RTT) );
         *(array_estimate + *index) = *sample_RTT;
         (*index)++;
         double estimate_dev_RTT = estimate_deviation_function(estimate_RTT, sample_RTT, array_estimate, index, count);
-        printf("Estimate deviation to %d\n", (int)estimate_dev_RTT );
+        printf("Estimated deviation: %d\n", (int)estimate_dev_RTT );
         (*count)++;
         double current_timer = *estimate_RTT + 4 * estimate_dev_RTT;
-        printf("Change timer to %d\n", (int)current_timer );
+        printf("Change timer to      %d\n", (int)current_timer );
+        reset_color();
              
         return (int)current_timer;
 }
@@ -166,8 +172,9 @@ int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double * arra
           *index = 1;
           *count = 0;
               
-          
+          cyan();
           printf("Reset adaptive timer to %d\n", timeout );
+          reset_color();
           return timeout;
 
 }

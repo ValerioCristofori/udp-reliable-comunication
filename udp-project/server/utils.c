@@ -54,7 +54,9 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 	int sockfd;
 
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { 	/* create UDP socket */
+      red(); 
 	    perror("errore in socket");
+      reset_color();
 	    return -1;
     }
 
@@ -74,7 +76,9 @@ int udp_socket_init_server( struct sockaddr_in*   addr,  char*   address, int   
 
 	/* assign address */
 	if (bind(sockfd, (struct sockaddr *)addr, sizeof(*addr)) < 0) {
+      red();
 	    perror("errore in bind");
+      reset_color();
 	    if( errno == EADDRINUSE ){
 	    	return 0;
 	    }

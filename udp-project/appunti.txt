@@ -1,0 +1,1 @@
+Inserire timer per ogni thread che chiude la connessione se non si e' stata usata per 1 minuto
