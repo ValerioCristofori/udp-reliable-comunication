@@ -73,11 +73,11 @@ typedef struct gobackn_packet{
 }Packet;
 
 
-extern int 	 	timeout;	//Timeout of the go back n protocol
-extern int 	 	server_port;  //Num port where main thread wait connections
-extern int 	 	window;    //the dimension of the window(packets in fly)
-extern double   prob_loss;
-extern int 		adaptive;
+extern int 	 	timeout;		//Timeout of the go back n protocol
+extern int 	 	server_port;  	//Num port where main thread wait connections
+extern int 	 	window;    		//the dimension of the window(packets in fly)
+extern double   prob_loss;      //probability of loss
+extern int 		adaptive;		//variable for adaptive timer if it isnt 0
 
 
 
@@ -89,11 +89,13 @@ extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, i
 
 extern char** str_split(char *a_str, const char a_delim);
 
-extern int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double estimate_RTT, double sample_RTT, double * array_estimate, int index, int count);
+extern int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count);
 
-extern int reset_adaptive_timer(double estimate_RTT, double sample_RTT, double * array_estimate, int index, int count);
+extern int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count);
 
 extern void build_directories( char *path, char *dirs );
+
+/* gbn functions */
 
 extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr );
 

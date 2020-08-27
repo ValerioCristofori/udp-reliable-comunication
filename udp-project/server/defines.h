@@ -99,11 +99,9 @@ extern int parse_argv( char **argv );
 
 extern int udp_socket_init_server( struct sockaddr_in  *addr,  char  *address, int   num_port, int option );
 
-extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, int   num_port );
-
-extern char** str_split(char* a_str, const char a_delim);
-
 extern void build_directories( char *path, char *dirs );
+
+/* gbn functions */
 
 extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr, pthread_t whoami );
 

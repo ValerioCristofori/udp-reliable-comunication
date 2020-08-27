@@ -127,7 +127,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 			if (errno == EINTR)	// alarm went off 
 	  		{
 	  			if(adaptive){
-	  				current_timer = reset_adaptive_timer(estimate_RTT, sample_RTT, array_estimate, num_index, count);
+	  				current_timer = reset_adaptive_timer(&estimate_RTT, &sample_RTT, array_estimate, &num_index, &count);
 	  			}
 	    		if (state_send->tries < MAXTRIES)	// incremented by alarm handler
 	      		{
@@ -165,7 +165,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 				state_send->tries = 0;
 				if(adaptive){
 					gettimeofday(&time_end, NULL);
-					current_timer = change_adaptive_timer(time_begin, time_end, estimate_RTT, sample_RTT, array_estimate, num_index, count);
+					current_timer = change_adaptive_timer(time_begin, time_end, &estimate_RTT, &sample_RTT, array_estimate, &num_index, &count);
 				}
 				return ackno;
 
@@ -175,7 +175,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 				state_send->tries = 0;
 				if(adaptive){
 					gettimeofday(&time_end, NULL);
-					current_timer = change_adaptive_timer(time_begin, time_end, estimate_RTT, sample_RTT, array_estimate, num_index, count);
+					current_timer = change_adaptive_timer(time_begin, time_end, &estimate_RTT, &sample_RTT, array_estimate, &num_index, &count);
 				}
 				alarm(current_timer); /* reset alarm */
 				
