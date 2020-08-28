@@ -322,9 +322,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		reliable_receive_ack( s, sockfd, addr_ptr, whoami, th );
 
 		print_state_sender(s);
-		blue();
-		printf(">>> Sent packet %d\n", s->packet_sent );
-		reset_color();
 	}
 	while( s->ack_no != num_packet - 1 ); // while the ack is not the last one
 

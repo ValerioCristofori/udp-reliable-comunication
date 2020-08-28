@@ -262,9 +262,6 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		reliable_receive_ack( sockfd, addr_ptr);
 
 		print_state_sender(state_send);
-		blue();
-		printf(">>> Sent packet %d\n", state_send->packet_sent );
-		reset_color();
 	}
 	while( ackno != num_packet - 1 ); 
 	//all datagram sent
@@ -273,8 +270,5 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 
 }
-
-
-
 
 

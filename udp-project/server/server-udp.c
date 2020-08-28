@@ -190,7 +190,7 @@ void *client_request( void *sockfd ){
     retry_num_port:  //label used when i try to use a portno that already exist
 
         client_port = generate_random_num_port();
-        printf("%d\n", client_port );
+        printf("Send new port number %d\n", client_port );
 
         // create the udp socket 
         sock_data = udp_socket_init_server( &clientaddr, NULL, client_port, 0 );

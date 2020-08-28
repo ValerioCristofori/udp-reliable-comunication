@@ -300,8 +300,21 @@ int main(int argc, char *argv[]) {
                               }
 
                               printf("Start sender\n");
+                              //start the put test if its defined
+                              #ifdef PUT_TEST
+                                  struct timeval test_timer_begin = {0,0};
+                                  gettimeofday(&test_timer_begin, NULL);
+                              #endif    
+                              
                               start_sender(datagram_ptr, size, sockfd, &servaddr); /* Send the request to the server */
 
+                              #ifdef PUT_TEST
+                                  struct timeval test_timer_end = {0,0};
+                                  gettimeofday(&test_timer_end, NULL);
+                                  cyan();
+                                  printf("DATAGRAM SEND IN %f SECONDS\n", (double)((double)(test_timer_end.tv_usec - test_timer_begin.tv_usec) / 1000000 + (double)(test_timer_end.tv_sec - test_timer_begin.tv_sec)) );
+                                  reset_color();
+                              #endif
 
               }else if( strcmp(arguments[0], "get") == 0 ){
                 
