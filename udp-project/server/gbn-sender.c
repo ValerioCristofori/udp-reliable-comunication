@@ -39,7 +39,7 @@ void *start_timer_thread( void *whoami ){
 	sleep(timeout);              //after TIMEOUT secs send the alarm to the specific thread
 	pthread_kill( *t , SIGALRM);
 
-	pthread_exit((void *)0);     //exit from the alarm thread
+	pthread_exit(NULL);     //exit from the alarm thread
 	
 	
 
@@ -129,9 +129,12 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 		    printf("Size of the packet %ld\n", sizeof(current_packet) );
 		    n = sendto(sockfd, &current_packet, (sizeof (int) * 2) + tmp_length, 0,(struct sockaddr *) addr_ptr,sizeof(*addr_ptr));
 		    if ( n !=  (sizeof(int)*2 + tmp_length) ){  //Sending packet with sendto func
+		    	red();
 		    	perror(" sent a different number of bytes ");
-
-		    	pthread_exit((void *)0);
+		    	reset_color();
+		    	thread_death();
+		    	num_conn--;
+		    	pthread_exit(NULL);
 		    }
 		    reset_color();
 
@@ -188,6 +191,8 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 					red();
 	    			perror("No Response");
 	    			reset_color();
+	    			thread_death();
+	    			num_conn--;
 	    			pthread_exit((void *)0);
 	    		}
 	      	
@@ -196,6 +201,8 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 				red();
 				perror("recvfrom() failed");
 				reset_color();
+				thread_death();
+				num_conn--;
 				pthread_exit((void *)0);
 			}
 
@@ -296,6 +303,8 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 		red();
 		perror("sigaction() failed for SIGALRM");
 		reset_color();
+		thread_death();
+		num_conn--;
 	    pthread_exit((void *)0);
 	}
 

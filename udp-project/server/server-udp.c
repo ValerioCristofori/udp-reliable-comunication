@@ -164,6 +164,7 @@ void *client_request( void *sockfd ){
   char                    path[MAXLINE];                //entire path to a file from ./root
   char                   *dirs;                         //path of the directory to create
   short                   syn;                          //short message to begin the connection
+  struct timeval          timer = {0,0};            //setting the timer for exit
   
         green();
         printf("Created a thread handler\n");  
@@ -229,10 +230,16 @@ void *client_request( void *sockfd ){
 
 			//Wait for the request from the client
             printf("Start receiver\n");
+            //start timer
+            timer.tv_sec = TIMER;
+            setsockopt(sock_data,SOL_SOCKET,SO_RCVTIMEO,(char*)&timer,sizeof(struct timeval));
             size = start_receiver(datagram_ptr, sock_data, &clientaddr);  // call blocker
             if( size == -1 ){
                   manage_error_signal(datagram_ptr, sock_data);
             }
+            //reset the timer
+            timer.tv_sec = 0;
+            setsockopt(sock_data,SOL_SOCKET,SO_RCVTIMEO,(char*)&timer,sizeof(struct timeval));
 
             print_datagram(datagram_ptr);
 

@@ -29,10 +29,20 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
 
 	n = recvfrom (sockfd, &current_packet, sizeof(current_packet), 0,(struct sockaddr *) addr_ptr, &len);
 	if ( n < 0 ) {
+		if(errno == EAGAIN || errno == EWOULDBLOCK){
+			red();
+		 	printf("Timer for waiting command expire ! (Thread %ld)\n", pthread_self() );
+		 	reset_color();
+		 	thread_death();
+		 	pthread_exit(NULL);
+
+		}else{
 			red();
             perror ( " recvfrom error " );
             reset_color();
-            exit(1);
+            thread_death();
+		 	pthread_exit(NULL);
+		}
     }
 
     current_packet.length = ntohl (current_packet.length); 
@@ -73,7 +83,8 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
 				red();
 		    	perror(" sent a different number of bytes ");
 		    	reset_color();
-		    	exit(1);
+		    	thread_death();
+		 		pthread_exit(NULL);
 	}
 
 

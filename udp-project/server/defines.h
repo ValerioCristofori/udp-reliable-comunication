@@ -25,6 +25,7 @@
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 #define MAX_THREADS       10			 //Max thread opened in the same time for manage connections
 #define KEY          	  'S'			 //Key for encrypt/decrypt_content (using xor operator char by char)
+#define TIMER 			  60			 //Timer until the exiting from the server if client doesnt respond
 
 #define red() 			printf("\033[0;31m")
 #define bold_red() 		printf("\033[1;31m")
@@ -114,6 +115,10 @@ extern void build_directories( char *path, char *dirs );
 extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr, pthread_t whoami );
 
 extern int start_receiver( Datagram *datagram, int sockfd, struct sockaddr_in *addr_ptr); /* return number bytes read */
+
+/* server functions */
+
+extern void thread_death();
 
 
 /* datagram setup functions */
