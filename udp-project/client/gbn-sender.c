@@ -220,7 +220,7 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	//init variables
 	current_timer = timeout;
-	estimate_RTT = timeout;	
+	estimate_RTT = 0;	
 	sample_RTT = 0;
 	num_index = 1;
 	count = 0;

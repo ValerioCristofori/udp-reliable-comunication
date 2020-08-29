@@ -1,6 +1,7 @@
 #include "defines.h"
 
 
+
 void init_state_receiver(State *s){
 	/*
 	 *  Init the struct State connection
@@ -35,7 +36,6 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
 
     current_packet.length = ntohl (current_packet.length); 
     current_packet.seq_no = ntohl (current_packet.seq_no);
-
 
 	rnd = rand() % 100;
 	if( rnd < prob_loss ){    //simulation of loss

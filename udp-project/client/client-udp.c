@@ -312,7 +312,8 @@ int main(int argc, char *argv[]) {
                                   struct timeval test_timer_end = {0,0};
                                   gettimeofday(&test_timer_end, NULL);
                                   cyan();
-                                  printf("DATAGRAM SEND IN %f SECONDS\n", (double)((double)(test_timer_end.tv_usec - test_timer_begin.tv_usec) / 1000000 + (double)(test_timer_end.tv_sec - test_timer_begin.tv_sec)) );
+                                  printf("DATAGRAM SENT IN %f SECONDS\n", (double)((double)(test_timer_end.tv_usec - test_timer_begin.tv_usec) / 1000000 + 
+                                                                                (double)(test_timer_end.tv_sec - test_timer_begin.tv_sec)) );
                                   reset_color();
                               #endif
 

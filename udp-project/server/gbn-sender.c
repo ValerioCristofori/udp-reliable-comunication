@@ -141,7 +141,6 @@ int reliable_send_datagram( State *s, void* buffer, int len_buffer, int sockfd, 
 		    if( s->send_base == s->next_seq_no ){  // when start the timer according to gbn
 				
 				if( *th != 0 ){   //clear all alarm threads
-					printf("kill %ld\n", *th );
 					pthread_cancel(*th);
 				}
 				pthread_create(th, NULL, start_timer_thread, (void*)whoami ); //create the timer

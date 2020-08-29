@@ -136,14 +136,14 @@ int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, do
 
         //calcolo nuovo timer
         *estimate_RTT = estimate_RTT_function(estimate_RTT, sample_RTT);
-        printf("Estimated RTT:       %d\n", (int)(*estimate_RTT) );
+        printf("Estimated RTT:       %f\n", (*estimate_RTT) );
         *(array_estimate + *index) = *sample_RTT;
         (*index)++;
         double estimate_dev_RTT = estimate_deviation_function(estimate_RTT, sample_RTT, array_estimate, index, count);
-        printf("Estimated deviation: %d\n", (int)estimate_dev_RTT );
+        printf("Estimated deviation: %f\n", estimate_dev_RTT );
         (*count)++;
         double current_timer = *estimate_RTT + 4 * estimate_dev_RTT;
-        printf("Change timer to      %d\n", (int)current_timer );
+        printf("Change timer to      %f\n", current_timer );
         reset_color();
              
         return (int)current_timer;

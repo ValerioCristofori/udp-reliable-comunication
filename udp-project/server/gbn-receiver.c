@@ -1,5 +1,8 @@
 #include "defines.h"
 
+#ifdef PUT_TEST
+int 	i = 0;
+#endif
 
 void init_state_receiver(State *s){
 	/*
@@ -22,6 +25,10 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
 	int 		n;
 	int 		rnd;
 	socklen_t 	len;
+	#ifdef PUT_TEST
+	int 	array_loss[10] = {1, 40, 70, 56, 87, 35, 76, 2, 39, 98};
+	#endif
+
 
 	memset(&current_packet, 0, sizeof(current_packet)); //clearing struct
 	len = sizeof(*addr_ptr);
@@ -48,6 +55,18 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
     current_packet.length = ntohl (current_packet.length); 
     current_packet.seq_no = ntohl (current_packet.seq_no);
 
+    #ifdef PUT_TEST   
+    	if( array_loss[i%10] < prob_loss ){
+    		i++;
+    		bold_red();
+			printf("---------------- PACKET LOST ---------------\n");
+			reset_color();
+			return 0;
+    	}
+    	i++;
+    #endif
+
+    #ifndef PUT_TEST
     rnd = rand() % 100;
 	if( rnd < prob_loss ){    //simulation of loss
 		bold_red();
@@ -55,6 +74,7 @@ int reliable_receive_packet(State *s, char  *buffer, int sockfd, struct sockaddr
 		reset_color();
 		return 0;
 	}
+	#endif
 	green();
 	printf (">>> Received packet %d with length %d\n", current_packet.seq_no, current_packet.length);
 

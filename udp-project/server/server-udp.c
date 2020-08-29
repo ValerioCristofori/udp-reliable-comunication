@@ -14,7 +14,7 @@
 
 
 
-int                        numthreads   = 0;     // Number of thread open for conns                      
+int                        numthreads;     // Number of thread open for conns                      
 pthread_mutex_t            mut          = PTHREAD_MUTEX_INITIALIZER;   //  Mutex for upgrade numthread resource
 R                        **relations;		     // Ptr to the list of relations between one thread and its sender state
 int                        timeout; //Timeout of the go back n protocol
@@ -190,7 +190,7 @@ void *client_request( void *sockfd ){
     retry_num_port:  //label used when i try to use a portno that already exist
 
         client_port = generate_random_num_port();
-        printf("Send new port number %d\n", client_port );
+        printf("%d\n", client_port );
 
         // create the udp socket 
         sock_data = udp_socket_init_server( &clientaddr, NULL, client_port, 0 );
@@ -456,6 +456,7 @@ int main(int argc, char *argv[]) {
 
       //malloc the struct for connection 
       relations = malloc(MAX_THREADS*sizeof(R *));
+      numthreads  = 0;
       
 
       while (1) {
@@ -485,7 +486,7 @@ int main(int argc, char *argv[]) {
                */
                                
               if (numthreads < MAX_THREADS) {
-				  //Selected a upper bound for threads 'MAX_THREADS'
+				          //Selected a upper bound for threads 'MAX_THREADS'
                   pthread_create(&threads[numthreads],NULL, client_request ,(void *)&sockfd);
               }
               printf("Currently handling client. %d threads in use.\n",numthreads);   
