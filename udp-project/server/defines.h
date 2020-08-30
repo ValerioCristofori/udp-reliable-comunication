@@ -25,7 +25,7 @@
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
 #define MAX_THREADS       10			 //Max thread opened in the same time for manage connections
 #define KEY          	  'S'			 //Key for encrypt/decrypt_content (using xor operator char by char)
-#define TIMER 			  60			 //Timer until the exiting from the server if client doesnt respond
+#define TIMER 			  180			 //Timer until the exiting from the server if client doesnt respond
 
 #define red() 			printf("\033[0;31m")
 #define bold_red() 		printf("\033[1;31m")

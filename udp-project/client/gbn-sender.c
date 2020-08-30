@@ -6,12 +6,10 @@ int 	 window_ack;
 int 	 byte_reads;
 double 	 current_timer;
 
-double 					   *array_estimate; 
+double 					    dev_RTT; 
 double 						estimate_RTT;
 struct timeval 				time_begin, time_end;
 double 						sample_RTT;
-int 						num_index;
-int 						count;
 
 
 
@@ -131,7 +129,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 			if (errno == EINTR)	// alarm went off 
 	  		{
 	  			if(adaptive){
-	  				current_timer = reset_adaptive_timer(&estimate_RTT, &sample_RTT, array_estimate, &num_index, &count);
+	  				current_timer = reset_adaptive_timer(&estimate_RTT, &sample_RTT, &dev_RTT);
 	  			}
 	    		if (state_send->tries < MAXTRIES)	// incremented by alarm handler
 	      		{
@@ -176,7 +174,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 				state_send->tries = 0;
 				if(adaptive){
 					gettimeofday(&time_end, NULL);
-					current_timer = change_adaptive_timer(time_begin, time_end, &estimate_RTT, &sample_RTT, array_estimate, &num_index, &count);
+					current_timer = change_adaptive_timer(time_begin, time_end, &estimate_RTT, &sample_RTT, &dev_RTT);
 				}
 				return ackno;
 
@@ -186,7 +184,7 @@ int reliable_receive_ack( int sockfd, struct sockaddr_in * addr_ptr){
 				state_send->tries = 0;
 				if(adaptive){
 					gettimeofday(&time_end, NULL);
-					current_timer = change_adaptive_timer(time_begin, time_end, &estimate_RTT, &sample_RTT, array_estimate, &num_index, &count);
+					current_timer = change_adaptive_timer(time_begin, time_end, &estimate_RTT, &sample_RTT, &dev_RTT);
 				}
 				alarm(current_timer); /* reset alarm */
 				
@@ -218,15 +216,13 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 	char 					   *buffer;
 	int 						num_packet = (size/PACKET_SIZE) + 1;
 
-	//init variables
-	current_timer = timeout;
-	estimate_RTT = 0;	
-	sample_RTT = 0;
-	num_index = 1;
-	count = 0;
-	array_estimate = malloc(100 * sizeof(double));
-	memset(array_estimate, 0, 100*sizeof(double));
-	*array_estimate = timeout;
+	if(adaptive){
+			//init variables
+			current_timer 	= timeout;
+			estimate_RTT 	= timeout;	
+			sample_RTT 		= 0;
+			dev_RTT 		= 0;
+	}
 	
 	printf("Number of packet to be send %d\n", num_packet);
 

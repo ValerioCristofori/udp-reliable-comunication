@@ -97,9 +97,9 @@ extern int udp_socket_init_client( struct sockaddr_in  *addr,  char  *address, i
 
 extern char** str_split(char *a_str, const char a_delim);
 
-extern int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count);
+extern int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double *estimate_RTT, double *sample_RTT, double * dev_RTT);
 
-extern int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count);
+extern int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double * dev_RTT);
 
 extern void build_directories( char *path, char *dirs );
 

@@ -92,41 +92,18 @@ int udp_socket_init_client( struct sockaddr_in*   addr,  char*   address, int   
   
 }
 
-double estimate_deviation_function(double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count){
+double deviation(double * dev_RTT, double *sample_RTT, double *estimateRTT) {
 
-  if(*count == 0) return 0;
-
-  double sum = 0;
-
-  int i = 0;
-  while(*(array_estimate + i) != 0){    
-
-    sum += *(array_estimate + i);
-    i++;
-  }
-
-    //calcolo media
-  double mean = (sum / (double)(*index));
-
-  double sum_scarti = 0;
-  i = 0;
-  while(*(array_estimate + i) != 0){    
-
-    sum_scarti += pow(((*(array_estimate + i)) - mean), 2);
-    i++;
-  }
-
-    double dev_RTT = sqrt(sum_scarti / (*index - 1));
-    return (((1 - BETA) * dev_RTT) + (BETA * (fabs(*sample_RTT - *estimate_RTT))));
+    return (1-BETA)*(*dev_RTT) + BETA*abs(*sample_RTT - *estimateRTT);
 }
 
-double estimate_RTT_function(double *estimate_RTT, double *sample_RTT) {
+double estimateRTT(double *estimate_RTT, double *sample_RTT) {
     
       return (((1 - ALPHA) * (*estimate_RTT)) + (ALPHA * (*sample_RTT)));
 }
 
 
-int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count){
+int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, double *estimate_RTT, double *sample_RTT, double * dev_RTT){
 
             
         
@@ -135,42 +112,25 @@ int change_adaptive_timer(struct timeval time_begin, struct timeval time_end, do
         printf("Calculated RTT:      %f\n", *sample_RTT );
 
         //calcolo nuovo timer
-        *estimate_RTT = estimate_RTT_function(estimate_RTT, sample_RTT);
+        *estimate_RTT = estimateRTT(estimate_RTT, sample_RTT);
         printf("Estimated RTT:       %f\n", (*estimate_RTT) );
-        *(array_estimate + *index) = *sample_RTT;
-        (*index)++;
-        double estimate_dev_RTT = estimate_deviation_function(estimate_RTT, sample_RTT, array_estimate, index, count);
-        printf("Estimated deviation: %f\n", estimate_dev_RTT );
-        (*count)++;
-        double current_timer = *estimate_RTT + 4 * estimate_dev_RTT;
+        *dev_RTT = deviation(dev_RTT, sample_RTT, estimate_RTT);     
+        printf("Estimated deviation: %f\n", *dev_RTT );
+        double current_timer = *estimate_RTT + 4 * (*dev_RTT);
         printf("Change timer to      %f\n", current_timer );
         reset_color();
-             
-        return (int)current_timer;
+        
+        if( (int)current_timer != 0 )return (int)current_timer;
+        return 1;
 }
 
-void reset_function(double * array){
-
-      int i = 1;
-      while(*(array + i) != 0){
-
-        *(array + i) = 0;
-        i++;
-      }
-
-      return;
-}
-
-int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double * array_estimate, int *index, int *count){
+int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double * dev_RTT){
 
 
           //ripristino timer
-          reset_function(array_estimate);
-          *array_estimate = timeout;
+          *dev_RTT = 0;
           *estimate_RTT = timeout;
           *sample_RTT = 0;
-          *index = 1;
-          *count = 0;
               
           cyan();
           printf("Reset adaptive timer to %d\n", timeout );
