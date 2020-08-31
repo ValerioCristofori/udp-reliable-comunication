@@ -44,54 +44,6 @@ void thread_birth(){
 }
 
 
-
-
-int filename_to_path( char* filename, char* path ){
-    
-    /*
-     * Setup in in the char pointer 'path' the path of the file
-     * in the directories's tree , using the shell script 'search_dir.sh'
-     * 
-     * Return  1 if the executing of shell script is failed
-     * Return -1 if the file doesnt exist
-     * Return -2 if the are too many matches with the filename 'filename'
-     * Return  0 else
-     */
-    
-    FILE    *p;   //file stream for output of shell script
-    char     command[FILENAME_LENGTH + 16];  //set of parsed parameters for shell 
-    char     buffer[MAXLINE];    //result of shell script
-
-    sprintf(command, "./script-shell/search_dir.sh %s", filename);
-    p = popen(command, "r");  /* launching shell script and creating a pipe 
-										for the results */
-    
-    if (p != NULL) {
-      fscanf(p, "%[^\n]", buffer);
-      if( strstr(buffer, filename) == NULL ){
-          red();
-          printf("file doesnt exist\n");
-          reset_color();
-          return -1;
-      }
-      if( strstr(buffer, "./root/") != NULL ){
-          red();
-          printf("too many file matches with this filename\n");
-          reset_color();
-          return -2;
-      }  
-      printf("result of the shell script: %s\n", buffer );
-      strcpy(path, buffer); //path points to buffer head
-      pclose(p);
-    }
-    else{
-      printf("error on executing shell script\n");
-      return 1;
-    }
-    return 0;
-}
-
-
 void manage_error_signal(Datagram *datagram_ptr, int sockfd ){
 	
 	/*
@@ -113,25 +65,6 @@ void manage_error_signal(Datagram *datagram_ptr, int sockfd ){
 
 
       }
-
-}
-
-
-
-
-int generate_random_num_port(){
-  
-  /*
-   *  Generate a random number betw 'lower' and 'upper'
-   * 		This is the portno of a connection
-   * 		When the conn is closed the number is reused 
-   * 		through the exception of the binding in the socket
-   */
-  
-  int   lower = 1024;
-  int   upper = 49151;
-
-  return ( rand() % ( upper - lower + 1 ) + lower );
 
 }
 

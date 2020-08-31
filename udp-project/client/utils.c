@@ -174,6 +174,27 @@ void build_directories( char *path, char *dirs ){
 
 }
 
+void path_to_filename( char *path , char *filename ){
+  
+    /*
+     * Setup the char pointer 'filename' the name of the file
+     * parsing the path through strstr
+     */
+
+
+      int l=0;
+      char* ssc;
+      
+      ssc = strstr(path, "/");
+      do{
+          l = strlen(ssc) + 1;
+          path = &path[strlen(path)-l+2];
+          ssc = strstr(path, "/");
+      }while(ssc);
+
+      strcpy( filename, path );
+}
+
 
 char** str_split(char* a_str, const char a_delim){
     

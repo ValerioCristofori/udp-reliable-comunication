@@ -103,6 +103,8 @@ extern int reset_adaptive_timer(double *estimate_RTT, double *sample_RTT, double
 
 extern void build_directories( char *path, char *dirs );
 
+extern void path_to_filename( char *path , char *filename );
+
 /* gbn functions */
 
 extern void start_sender( Datagram *datagram, int size, int sockfd, struct sockaddr_in *addr_ptr );

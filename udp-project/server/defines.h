@@ -23,7 +23,7 @@
 #define MAXTRIES          10			 //Upper bound of tries to send without good ack
 #define MAXLINE           1024			 //Max bytes take from input
 #define PACKET_SIZE    	  256			 //Dimension of the single packet in go back n protocol
-#define MAX_THREADS       10			 //Max thread opened in the same time for manage connections
+#define MAX_THREADS       20			 //Max thread opened in the same time for manage connections
 #define KEY          	  'S'			 //Key for encrypt/decrypt_content (using xor operator char by char)
 #define TIMER 			  180			 //Timer until the exiting from the server if client doesnt respond
 
@@ -108,7 +108,11 @@ extern int parse_argv( char **argv );
 
 extern int udp_socket_init_server( struct sockaddr_in  *addr,  char  *address, int   num_port, int option );
 
+extern int generate_random_num_port();
+
 extern void build_directories( char *path, char *dirs );
+
+extern int filename_to_path( char* filename, char* path );
 
 /* gbn functions */
 

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -lpthread -pthread -lm  
+CFLAGS = -Wall -lpthread -pthread -lm 
 DEPS = defines.h
 OBJ = utils.o server-udp.o gbn-sender.o gbn-receiver.o print.o datagram-setup.o
 

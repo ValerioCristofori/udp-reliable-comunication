@@ -38,7 +38,7 @@ void handler_alarm_conn (int ign)  /* handler for SIGALRM */
     exit(0);
 }
 
-void handler_sigint() { 
+void handler_sig() { 
        
     int size;
 
@@ -57,28 +57,9 @@ void handler_sigint() {
 }
 
 
-void path_to_filename( char *path , char *filename ){
-	
-	  /*
-	   * Setup the char pointer 'filename' the name of the file
-	   * parsing the path through strstr
-	   */
 
 
-      int l=0;
-      char* ssc;
-      
-      ssc = strstr(path, "/");
-      do{
-          l = strlen(ssc) + 1;
-          path = &path[strlen(path)-l+2];
-          ssc = strstr(path, "/");
-      }while(ssc);
 
-      strcpy( filename, path );
-}
-
-//
 
 
 
@@ -200,13 +181,27 @@ int main(int argc, char *argv[]) {
   reset_color();
 
   //set the handler for sigint signal
-  sa.sa_handler = handler_sigint;
+  sa.sa_handler = handler_sig;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_SIGINFO;
 
   if (sigaction(SIGINT, &sa, NULL) == -1) {
     red();
-      printf("sigaction error\n");
+      printf("sigaction sigint error\n");
+      exit(-1); 
+    reset_color();
+  }
+
+  if (sigaction(SIGQUIT, &sa, NULL) == -1) {
+    red();
+      printf("sigaction sigquit error\n");
+      exit(-1); 
+    reset_color();
+  }
+
+  if (sigaction(SIGTERM, &sa, NULL) == -1) {
+    red();
+      printf("sigaction sigterm error\n");
       exit(-1); 
     reset_color();
   }

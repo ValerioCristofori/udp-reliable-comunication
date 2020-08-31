@@ -231,7 +231,6 @@ int reliable_receive_ack( State *s, int sockfd, struct sockaddr_in * addr_ptr, p
 				printf("Restart TO\n");
 				s->tries = 0;
 				if( *th != 0 ){
-					printf("kill %ld\n", *th );
 					pthread_cancel(*th);
 				}
 				pthread_create(th, NULL, start_timer_thread, (void*)whoami );

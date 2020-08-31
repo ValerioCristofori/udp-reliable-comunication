@@ -218,11 +218,11 @@ void start_sender( Datagram* datagram, int size, int sockfd, struct sockaddr_in 
 
 	if(adaptive){
 			//init variables
-			current_timer 	= timeout;
 			estimate_RTT 	= timeout;	
 			sample_RTT 		= 0;
 			dev_RTT 		= 0;
 	}
+	current_timer 	= timeout;
 	
 	printf("Number of packet to be send %d\n", num_packet);
 
